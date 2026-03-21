@@ -1,50 +1,70 @@
-# Welcome to your Expo app 👋
+<p align="center">
+  <img src="assets/images/icon.png" width="120" height="120" alt="Quench" />
+</p>
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+<h1 align="center">Quench</h1>
 
-## Get started
+<p align="center">
+  <strong>Hydration tracking for iOS</strong>
+</p>
 
-1. Install dependencies
+<p align="center">
+  Log water, see your progress over time, and stay on track with reminders—built with <a href="https://expo.dev">Expo</a> and <a href="https://docs.expo.dev/router/introduction/">Expo Router</a>.
+</p>
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## Features
 
-   ```bash
-   npx expo start
-   ```
+- **Daily logging** — Quick entry and a clear picture of today’s intake  
+- **Insights** — Trends and history so you can see patterns, not just numbers  
+- **Apple Health** — Reads and writes water (and related signals like activity and weight where used for goals) via HealthKit on iOS  
+- **Reminders** — Local notifications to nudge you when it helps  
+- **Onboarding** — Guided first-run setup  
 
-In the output, you'll find options to open the app in a
+> **Note:** HealthKit and other native modules need a [development build](https://docs.expo.dev/develop/development-builds/introduction/) or a store build. [Expo Go](https://expo.dev/go) won’t include all of these capabilities.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Requirements
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- [Node.js](https://nodejs.org/) (LTS recommended)  
+- [Xcode](https://developer.apple.com/xcode/) (iOS simulator / device)  
 
-## Get a fresh project
-
-When you're ready, run:
+## Getting started
 
 ```bash
-npm run reset-project
+npm install
+npm start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Then choose **iOS** from the dev server UI, or run:
+
+```bash
+npm run ios
+```
+
+## Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run lint` | Run Oxlint |
+| `npm run lint:fix` | Fix lint issues where possible |
+| `npm run format` | Format with Oxfmt |
+| `npm run format:check` | Check formatting |
+| `npm run check` | Lint + format check |
+
+## Project structure
+
+- **`app/`** — File-based routes (screens, layouts, onboarding)  
+- **`assets/`** — Images and static assets (app icon: `assets/images/icon.png`)  
+- **`components/`** — Shared UI  
 
 ## Learn more
 
-To learn more about developing your project with Expo, look at the following resources:
+- [Expo documentation](https://docs.expo.dev/)  
+- [Expo Router](https://docs.expo.dev/router/introduction/)  
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+<p align="center">
+  Built with Expo SDK 55 · React Native · TypeScript
+</p>
