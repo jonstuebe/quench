@@ -21,12 +21,18 @@ vec4 main(vec2 pos) {
     return vec4(u_colorAir, 1.0);
   }
 
-  float waterTop = 1.0 - fill;
+  // At goal (100%+), push the surface above the card so the wavy foam line is not visible
+  // along the top edge. Below goal, water line follows fill only.
+  float waterTop = (u_fill >= 1.0)
+    ? (1.0 - max(u_fill, 1.02))
+    : (1.0 - u_fill);
   float wave =
     sin(uv.x * 6.28318 * 4.0 + t * 2.8) * 0.007
     + sin(uv.x * 6.28318 * 9.0 - t * 2.1) * 0.0035
     + sin(uv.x * 6.28318 * 2.0 + t * 1.2) * 0.002;
-  float surfaceY = clamp(waterTop + wave, 0.0, 1.0);
+  // Do not clamp the lower bound: when waterTop is negative (full/over goal), the surface
+  // must stay above y=0 or clamp(…,0,1) pins it to the top and recreates a sliver of "air".
+  float surfaceY = min(waterTop + wave, 1.0);
 
   if (uv.y < surfaceY) {
     return vec4(u_colorAir, 1.0);
@@ -123,7 +129,7 @@ export function WaterWidgetSkiaBackground({
     () => ({
       u_time: clock.value * 0.001,
       u_resolution: vec(width, height),
-      u_fill: Math.min(1, Math.max(0, fillFraction)),
+      u_fill: Math.max(0, fillFraction),
       u_colorTurquoise: turquoise,
       u_colorSapphire: sapphire,
       u_colorDeep: deep,

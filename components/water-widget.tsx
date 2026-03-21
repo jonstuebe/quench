@@ -34,7 +34,7 @@ import {
 } from "@/lib/health/store";
 import { prefs$ } from "@/lib/prefs";
 import type { TimeParts } from "@/lib/types";
-import { flOzToDisplay, formatVolumeLabel } from "@/lib/volume";
+import { flOzToDisplay, formatDisplayVolumeValue, formatVolumeLabel } from "@/lib/volume";
 import { useValue } from "@legendapp/state/react";
 
 import { WaterWidgetBackground } from "./water-widget-background";
@@ -42,6 +42,18 @@ import { WaterWidgetBackground } from "./water-widget-background";
 const ON_GRADIENT = "#ffffff";
 const ON_GRADIENT_MUTED = "rgba(255,255,255,0.78)";
 const ON_GRADIENT_SUBTLE = "rgba(255,255,255,0.55)";
+
+/** Dark halo so white labels stay legible over bright wave/foam in the Skia background. */
+const HERO_TEXT_SHADOW = {
+  textShadowColor: "rgba(0,0,0,0.32)",
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 6,
+};
+const TIME_LABEL_TEXT_SHADOW = {
+  textShadowColor: "rgba(0,0,0,0.26)",
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 2,
+};
 
 /** Equal segments across your wake window; notches divide that span. */
 const DAY_SEGMENTS = 6;
@@ -96,7 +108,9 @@ export function WaterWidget({ mode }: Props) {
   const goalFlOz = calculateWaterGoalFlOz(weight, exerciseMin);
   const displayed = flOzToDisplay(water, unit);
   const displayedGoal = flOzToDisplay(goalFlOz, unit);
-  const pct = goalFlOz > 0 ? Math.min(100, Math.round((water / goalFlOz) * 100)) : 0;
+  const pct = goalFlOz > 0 ? Math.round((water / goalFlOz) * 100) : 0;
+  /** Bar fill stays at full width once goal is met (or exceeded). */
+  const trackFillPct = Math.min(100, pct);
   const label = formatVolumeLabel(unit);
 
   async function onUndo() {
@@ -126,8 +140,6 @@ export function WaterWidget({ mode }: Props) {
   const colorAir = colorScheme === "dark" ? "#0c1624" : "#7aa8d4";
 
   const fillFraction = goalFlOz > 0 ? Math.min(1, water / goalFlOz) : 0;
-
-  const kickerLabel = mode === "today" ? "Today" : format(dayDate, "EEE, MMM d");
 
   const labelDay = mode === "today" ? new Date() : dayDate;
   const segmentTimes = segmentEndTimeLabels(labelDay, DAY_SEGMENTS, wakeUp, bedtime);
@@ -179,8 +191,7 @@ export function WaterWidget({ mode }: Props) {
             ) : (
               <>
                 <View style={styles.heroCenter}>
-                  <Text style={styles.kicker}>{kickerLabel}</Text>
-                  <View style={styles.heroRow}>
+                  <Text style={styles.heroRow}>
                     <Text
                       style={[
                         styles.heroPct,
@@ -192,10 +203,10 @@ export function WaterWidget({ mode }: Props) {
                       {pct}
                     </Text>
                     <Text style={styles.heroPctSuffix}>%</Text>
-                  </View>
+                  </Text>
                   <Text style={styles.volumeLine}>
-                    {displayed.toFixed(unit === "fl-oz" ? 1 : 0)} {label} of{" "}
-                    {displayedGoal.toFixed(unit === "fl-oz" ? 1 : 0)} {label}
+                    {formatDisplayVolumeValue(displayed, unit)} {label} of{" "}
+                    {formatDisplayVolumeValue(displayedGoal, unit)} {label}
                   </Text>
                 </View>
 
@@ -206,7 +217,7 @@ export function WaterWidget({ mode }: Props) {
                   >
                     <View style={styles.trackContainer}>
                       <View style={styles.track}>
-                        <View style={[styles.trackFill, { width: `${pct}%` }]} />
+                        <View style={[styles.trackFill, { width: `${trackFillPct}%` }]} />
                       </View>
                       <View style={styles.trackNotchOverlay} pointerEvents="none">
                         {Array.from({ length: DAY_SEGMENTS }, (_, i) => (
@@ -315,14 +326,6 @@ const styles = StyleSheet.create({
   trackFooter: {
     alignSelf: "stretch",
   },
-  kicker: {
-    fontSize: 13,
-    fontWeight: "600",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-    color: ON_GRADIENT_SUBTLE,
-    marginBottom: 4,
-  },
   heroRow: {
     flexDirection: "row",
     alignItems: "baseline",
@@ -332,12 +335,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: Platform.OS === "ios" ? -1.5 : 0,
     color: ON_GRADIENT,
+    ...HERO_TEXT_SHADOW,
   },
   heroPctSuffix: {
     fontSize: 26,
     fontWeight: "600",
     color: ON_GRADIENT_MUTED,
     marginLeft: 1,
+    ...HERO_TEXT_SHADOW,
   },
   volumeLine: {
     marginTop: 8,
@@ -346,6 +351,7 @@ const styles = StyleSheet.create({
     color: ON_GRADIENT_MUTED,
     textAlign: "center",
     letterSpacing: Platform.OS === "ios" ? -0.2 : 0,
+    ...HERO_TEXT_SHADOW,
   },
   meterColumn: {
     width: "100%",
@@ -402,6 +408,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     color: ON_GRADIENT_SUBTLE,
     textAlign: "center",
+    ...TIME_LABEL_TEXT_SHADOW,
     ...Platform.select({
       ios: { fontVariant: ["tabular-nums"] },
       default: {},

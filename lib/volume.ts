@@ -32,6 +32,22 @@ export function flOzToDisplay(flOz: number, unit: VolumeDisplayUnit): number {
   return convert(flOz).from("fl-oz").to(map[unit]);
 }
 
+/**
+ * Format a display-unit value (from {@link flOzToDisplay}) for UI: omit unnecessary
+ * trailing zeros; max precision depends on unit (e.g. tenths for fl oz, hundredths for ml/cups).
+ */
+export function formatDisplayVolumeValue(value: number, unit: VolumeDisplayUnit): string {
+  const v =
+    unit === "fl-oz"
+      ? Math.round(value * 10) / 10
+      : Math.round(value * 100) / 100;
+  const maxFractionDigits = unit === "fl-oz" ? 1 : 2;
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: maxFractionDigits,
+    minimumFractionDigits: 0,
+  }).format(v);
+}
+
 /** Display value → fl oz for HealthKit */
 export function displayToFlOz(value: number, unit: VolumeDisplayUnit): number {
   const map: Record<VolumeDisplayUnit, "fl-oz" | "ml" | "cup" | "pnt"> = {
