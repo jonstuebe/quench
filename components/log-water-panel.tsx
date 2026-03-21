@@ -163,8 +163,8 @@ export function LogWaterPanel({ dateParam }: Props) {
 /** Matches `WaterWidget` card `marginHorizontal` so the column aligns with the progress card. */
 const COLUMN_MARGIN_H = 16;
 
-/** Space between stacked log controls; `WaterWidget` immersive bottom inset matches this above the panel. */
-export const LOG_WATER_VERTICAL_STACK_GAP = 12;
+/** Space between stacked log controls; `WaterWidget` bottom inset matches this above the panel. */
+export const LOG_WATER_VERTICAL_STACK_GAP = 18;
 
 const styles = StyleSheet.create({
   root: {

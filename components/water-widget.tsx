@@ -193,11 +193,13 @@ export function WaterWidget({
                   </Text>
                 </View>
 
-                <View style={styles.trackFooter}>
-                  <ProgressTrackGlass>
-                    <WaterDayProgressTrack mode={mode} />
-                  </ProgressTrackGlass>
-                </View>
+                {mode === "today" ? (
+                  <View style={styles.trackFooter}>
+                    <ProgressTrackGlass>
+                      <WaterDayProgressTrack mode={mode} />
+                    </ProgressTrackGlass>
+                  </View>
+                ) : null}
               </>
             )}
           </View>
@@ -211,7 +213,8 @@ const styles = StyleSheet.create({
   cardOuter: {
     flex: 1,
     marginHorizontal: 16,
-    marginBottom: 0,
+    /** Separates the card (and wave) from `LogWaterPanel` below; inner `paddingBottom` does not. */
+    marginBottom: LOG_WATER_VERTICAL_STACK_GAP,
     minHeight: 300,
     ...Platform.select({
       ios: {
@@ -235,7 +238,7 @@ const styles = StyleSheet.create({
   immersiveOuter: {
     flex: 1,
     marginHorizontal: 16,
-    marginBottom: 0,
+    marginBottom: LOG_WATER_VERTICAL_STACK_GAP,
     minHeight: 0,
   },
   immersiveInner: {
