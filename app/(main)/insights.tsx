@@ -32,7 +32,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useValue } from "@legendapp/state/react";
 
-import { SectionHeader, styles as sharedStyles } from "./settings/settings-shared";
+import { SectionHeader, styles as sharedStyles } from "@/components/settings-layout";
 
 export default function InsightsScreen() {
   const unit = useValue(prefs$.unit);

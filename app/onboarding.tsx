@@ -1,4 +1,4 @@
-import { SectionHeader, styles as settingsStyles } from "@/app/(main)/settings/settings-shared";
+import { SectionHeader, styles as settingsStyles, timePartsToDate } from "@/components/settings-layout";
 import { ThemedText } from "@/components/themed-text";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -17,15 +17,9 @@ import { useValue } from "@legendapp/state/react";
 const isIOS = Platform.OS === "ios";
 
 const REMINDER_INTERVAL_OPTIONS: { label: string; value: NotificationInterval | undefined }[] = [
-  { label: "Off", value: undefined },
+  { label: "Disabled", value: undefined },
   ...NOTIFICATION_INTERVALS.map((m) => ({ label: `${m} min`, value: m })),
 ];
-
-function partsToDate(hour: number, minute: number) {
-  const d = new Date();
-  d.setHours(hour, minute, 0, 0);
-  return d;
-}
 
 export default function OnboardingScreen() {
   const colorScheme = useColorScheme();
@@ -34,9 +28,10 @@ export default function OnboardingScreen() {
   const wake = useValue(prefs$.wakeUp);
   const bed = useValue(prefs$.bedtime);
   const reminderMinutes = useValue(prefs$.reminderMinutes);
+  const remindersEnabledRaw = useValue(prefs$.remindersEnabled);
 
-  const wakeDate = useMemo(() => partsToDate(wake.hour, wake.minute), [wake.hour, wake.minute]);
-  const bedDate = useMemo(() => partsToDate(bed.hour, bed.minute), [bed.hour, bed.minute]);
+  const wakeDate = useMemo(() => timePartsToDate(wake.hour, wake.minute), [wake.hour, wake.minute]);
+  const bedDate = useMemo(() => timePartsToDate(bed.hour, bed.minute), [bed.hour, bed.minute]);
 
   const grouped = colorScheme === "dark" ? "#1C1C1E" : "#FFFFFF";
   const sectionLabel = colorScheme === "dark" ? "#8E8E93" : "#6D6D70";
@@ -54,10 +49,12 @@ export default function OnboardingScreen() {
     void (async () => {
       if (opt.value == null) {
         prefs$.reminderMinutes.set(undefined);
+        prefs$.remindersEnabled.set(false);
         await cancelScheduledReminders();
         return;
       }
       prefs$.reminderMinutes.set(opt.value);
+      prefs$.remindersEnabled.set(true);
       await setupNotifications();
     })();
   }
@@ -177,10 +174,13 @@ export default function OnboardingScreen() {
             style={[settingsStyles.checklistGroup, { backgroundColor: grouped }]}
           >
             {REMINDER_INTERVAL_OPTIONS.map((opt, index, arr) => {
+              const remindersOn = remindersEnabledRaw !== false;
               const selected =
-                opt.value === undefined ? reminderMinutes == null : reminderMinutes === opt.value;
+                opt.value === undefined
+                  ? reminderMinutes == null || !remindersOn
+                  : reminderMinutes === opt.value && remindersOn;
               return (
-                <View key={String(opt.value ?? "off")}>
+                <View key={String(opt.value ?? "disabled")}>
                   <Pressable
                     onPress={() => onReminderOptionPress(opt)}
                     style={({ pressed }) => [
