@@ -85,8 +85,7 @@ export default function LogWaterScreen() {
   const useSwift = Platform.OS === "ios";
 
   const addButtonBg = colors.tint;
-  const addButtonLabel =
-    colorScheme === "dark" ? Colors.light.text : "#fff";
+  const addButtonLabel = colorScheme === "dark" ? Colors.light.text : "#fff";
 
   return (
     <View
