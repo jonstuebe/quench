@@ -2,7 +2,7 @@
   "expo": {
     "name": "Quench",
     "slug": "quench",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "quench",
@@ -18,7 +18,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.jonstuebe.quench",
       "infoPlist": {
-        "UIBackgroundModes": ["fetch"]
+        "UIBackgroundModes": ["fetch", "fetch"],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -76,7 +77,23 @@
     },
     "extra": {
       "eas": {
-        "projectId": "902364c1-db18-45c1-b3fd-135f3faebcf9"
+        "projectId": "902364c1-db18-45c1-b3fd-135f3faebcf9",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.jonstuebe.quench.app-intent",
+                  "targetName": "QuenchLogWater",
+                  "entitlements": {
+                    "com.apple.developer.healthkit": true,
+                    "com.apple.developer.healthkit.background-delivery": true
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     }
   }

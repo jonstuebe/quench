@@ -8,6 +8,12 @@ import { Platform } from "react-native";
 const tintColorLight = "#0a7ea4";
 const tintColorDark = "#fff";
 
+/**
+ * Primary label color on light frosted glass over bright water/sky (home immersive UI).
+ * Teal `tint` and faint white both wash out; this navy reads clearly on pale glass.
+ */
+export const glassLabelOnBrightLight = "#0d2840";
+
 export const Colors = {
   light: {
     text: "#11181C",

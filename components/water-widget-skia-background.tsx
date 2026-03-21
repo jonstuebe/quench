@@ -1,7 +1,19 @@
-import { Canvas, Fill, Shader, Skia, vec, useClock } from "@shopify/react-native-skia";
-import { useDerivedValue } from "react-native-reanimated";
-import { useMemo } from "react";
+import {
+  Canvas,
+  Fill,
+  Shader,
+  Skia,
+  useClock,
+  vec,
+} from "@shopify/react-native-skia";
+import { useEffect, useMemo, useRef } from "react";
 import { StyleSheet, View } from "react-native";
+import {
+  Easing,
+  useDerivedValue,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 const WATER_SHADER_SOURCE = `
 uniform float u_time;
@@ -27,9 +39,9 @@ vec4 main(vec2 pos) {
     ? (1.0 - max(u_fill, 1.02))
     : (1.0 - u_fill);
   float wave =
-    sin(uv.x * 6.28318 * 4.0 + t * 2.8) * 0.007
-    + sin(uv.x * 6.28318 * 9.0 - t * 2.1) * 0.0035
-    + sin(uv.x * 6.28318 * 2.0 + t * 1.2) * 0.002;
+    sin(uv.x * 6.28318 * 3.2 + t * 2.4) * 0.0045
+    + sin(uv.x * 6.28318 * 6.8 - t * 1.8) * 0.0018
+    + sin(uv.x * 6.28318 * 1.6 + t * 1.0) * 0.0012;
   // Do not clamp the lower bound: when waterTop is negative (full/over goal), the surface
   // must stay above y=0 or clamp(…,0,1) pins it to the top and recreates a sliver of "air".
   float surfaceY = min(waterTop + wave, 1.0);
@@ -59,20 +71,29 @@ vec4 main(vec2 pos) {
 
   float f1 = sin(dot(uv, vec2(11.0, 4.0)) + t * 1.0) * 0.5 + 0.5;
   float f2 = sin(dot(uv, vec2(-6.0, 9.0)) - t * 0.85) * 0.5 + 0.5;
-  float f3 = sin(distSurf * 38.0 - t * 1.4) * 0.5 + 0.5;
-  float foamVar = f1 * 0.45 + f2 * 0.35 + f3 * 0.2;
-  float crest = sin(uv.x * 6.28318 * 10.0 + t * 3.2) * 0.5 + 0.5;
-  crest *= sin(uv.x * 6.28318 * 22.0 - t * 4.0) * 0.35 + 0.65;
+  float f3 = sin(distSurf * 28.0 - t * 1.1) * 0.5 + 0.5;
+  float foamVar = f1 * 0.48 + f2 * 0.38 + f3 * 0.14;
+  float crest = sin(uv.x * 6.28318 * 8.0 + t * 2.6) * 0.5 + 0.5;
+  crest *= sin(uv.x * 6.28318 * 14.0 - t * 3.0) * 0.22 + 0.78;
   float foamUltra = exp(-distSurf * 11.0);
   float foamWide = exp(-distSurf * 15.0);
   float foamMid = exp(-distSurf * 34.0);
   float foamTight = exp(-distSurf * 68.0);
-  float foamBreak = smoothstep(0.28, 0.86, foamVar * 0.62 + crest * 0.38);
+  float foamBreak = smoothstep(0.30, 0.88, foamVar * 0.76 + crest * 0.24);
   float foamBody =
     foamUltra * 0.22 + foamWide * 0.48 + foamMid * 0.22 + foamTight * 0.08;
   float foamBright = foamBody * foamBreak * (0.78 + 0.22 * (f2 * 0.5 + f3 * 0.5));
-  foamBright += foamMid * 0.52 * (0.5 + 0.5 * sin(dot(uv, vec2(58.0, 22.0)) + t * 6.0));
-  float foamEdge = exp(-distSurf * 108.0) * (0.65 + 0.35 * f1);
+  foamBright += foamMid * 0.30 * (0.5 + 0.5 * sin(dot(uv, vec2(42.0, 16.0)) + t * 4.8));
+  float bubbleBand = exp(-distSurf * 155.0) * exp(-distSurf * 155.0);
+  float bubbleGridX = sin(uv.x * 6.28318 * 36.0 + t * 0.9) * 0.5 + 0.5;
+  float bubbleGridY = sin(uv.y * 6.28318 * 24.0 - t * 0.7) * 0.5 + 0.5;
+  float bubbleCells = bubbleGridX * bubbleGridY;
+  float bubbleDrift = sin(dot(uv, vec2(52.0, 58.0)) + t * 1.4) * 0.5 + 0.5;
+  float bubbleField = bubbleCells * 0.72 + bubbleDrift * 0.28;
+  float bubbleMask = smoothstep(0.80, 0.965, bubbleField);
+  float bubbleTexture = bubbleBand * bubbleMask * foamWide * 0.27;
+  foamBright += bubbleTexture;
+  float foamEdge = exp(-distSurf * 108.0) * (0.78 + 0.22 * f1);
   vec3 foamTint = vec3(0.94, 0.97, 1.0);
   vec3 outC = mix(body, foamTint, clamp(foamBright + foamEdge * 0.85, 0.0, 0.94));
 
@@ -125,17 +146,32 @@ export function WaterWidgetSkiaBackground({
 
   const clock = useClock();
 
+  const animatedFill = useSharedValue(fillFraction);
+  const skipNextFillAnimation = useRef(true);
+
+  useEffect(() => {
+    if (skipNextFillAnimation.current) {
+      skipNextFillAnimation.current = false;
+      animatedFill.value = fillFraction;
+      return;
+    }
+    animatedFill.value = withTiming(fillFraction, {
+      duration: 780,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [fillFraction, animatedFill]);
+
   const uniforms = useDerivedValue(
     () => ({
       u_time: clock.value * 0.001,
       u_resolution: vec(width, height),
-      u_fill: Math.max(0, fillFraction),
+      u_fill: Math.max(0, animatedFill.value),
       u_colorTurquoise: turquoise,
       u_colorSapphire: sapphire,
       u_colorDeep: deep,
       u_colorAir: air,
     }),
-    [clock, width, height, fillFraction, turquoise, sapphire, deep, air],
+    [clock, width, height, turquoise, sapphire, deep, air, animatedFill],
   );
 
   if (width <= 0 || height <= 0) {

@@ -7,9 +7,12 @@ import { Platform, StyleSheet, View } from "react-native";
 import type { NativeStackHeaderItem } from "@react-navigation/native-stack";
 
 import { LogWaterPanel } from "@/components/log-water-panel";
+import { WaterHomeShaderBackdrop } from "@/components/water-home-shader-backdrop";
 import { WaterWidget } from "@/components/water-widget";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useWaterShaderUniforms } from "@/hooks/use-water-shader-uniforms";
+import { useWaterUndoLastDrink } from "@/hooks/use-water-undo-last-drink";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 function HomeHeaderRightFallback({ tintColor }: { tintColor: string }) {
@@ -51,16 +54,39 @@ export default function HomeScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
+  const { water, loading } = useWaterShaderUniforms("today");
+  const { canUndo, onUndo } = useWaterUndoLastDrink({
+    mode: "today",
+    water,
+    loading,
+  });
 
   useLayoutEffect(() => {
-    const tint = colors.text;
+    const tint = colorScheme === "light" ? "#ffffff" : colors.text;
+    const showUndoInHeader = water > 0 && !loading && canUndo;
 
     navigation.setOptions({
       title: "",
-      headerStyle: { backgroundColor: colors.background },
+      headerTransparent: true,
+      headerStyle: { backgroundColor: "transparent" },
       headerTintColor: tint,
       ...(Platform.OS === "ios"
         ? {
+            unstable_headerLeftItems: (): NativeStackHeaderItem[] =>
+              showUndoInHeader
+                ? [
+                    {
+                      type: "button",
+                      label: "Undo",
+                      accessibilityLabel: "Undo last drink",
+                      icon: {
+                        type: "sfSymbol",
+                        name: "arrow.uturn.backward",
+                      },
+                      onPress: onUndo,
+                    },
+                  ]
+                : [],
             unstable_headerRightItems: (): NativeStackHeaderItem[] => [
               {
                 type: "button",
@@ -81,16 +107,45 @@ export default function HomeScreen() {
             ],
           }
         : {
+            headerLeft: () =>
+              showUndoInHeader ? (
+                <HeaderButton
+                  accessibilityLabel="Undo last drink"
+                  onPress={onUndo}
+                >
+                  <SymbolView
+                    name={{ ios: "arrow.uturn.backward", android: "undo" }}
+                    size={22}
+                    tintColor={tint}
+                    resizeMode="scaleAspectFit"
+                  />
+                </HeaderButton>
+              ) : null,
             headerRight: () => <HomeHeaderRightFallback tintColor={tint} />,
           }),
     });
-  }, [navigation, router, colors.background, colors.text]);
+  }, [
+    navigation,
+    router,
+    colorScheme,
+    colors.text,
+    water,
+    loading,
+    canUndo,
+    onUndo,
+  ]);
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <SafeAreaView style={styles.safe} edges={["bottom", "left", "right"]}>
+    <View style={styles.root}>
+      <WaterHomeShaderBackdrop />
+      {/* Bottom inset is applied on `LogWaterPanel`; including bottom here doubled the gap above the picker. */}
+      <SafeAreaView style={styles.safe} edges={["left", "right"]}>
         <View style={styles.widgetWrap}>
-          <WaterWidget mode="today" />
+          <WaterWidget
+            mode="today"
+            surfaceStyle="immersive"
+            showUndoInWidget={false}
+          />
         </View>
       </SafeAreaView>
       <LogWaterPanel />

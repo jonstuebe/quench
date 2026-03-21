@@ -1,2 +1,2 @@
-// TS resolves this file; Metro prefers `.web` / `.native` over this at bundle time.
+// TS entry; Metro resolves `water-widget-background.native` on native.
 export { WaterWidgetBackground } from "./water-widget-background.native";
