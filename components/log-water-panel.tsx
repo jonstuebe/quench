@@ -12,7 +12,7 @@ import { Host, Picker, Text as SText } from "@expo/ui/swift-ui";
 import { pickerStyle, tag } from "@expo/ui/swift-ui/modifiers";
 import { parseISO, startOfDay } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Platform, Pressable, StyleSheet, View } from "react-native";
+import { Alert, Platform, PlatformColor, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useValue } from "@legendapp/state/react";
@@ -82,7 +82,12 @@ export function LogWaterPanel({ dateParam }: Props) {
 
   const useSwift = Platform.OS === "ios";
 
-  const addButtonBg = colors.tint;
+  const addButtonBg =
+    colorScheme === "light"
+      ? Platform.OS === "ios"
+        ? PlatformColor("systemBlue")
+        : "#007AFF"
+      : colors.tint;
   const addButtonLabel = colorScheme === "dark" ? Colors.light.text : "#fff";
 
   const groupedBg = colorScheme === "dark" ? "#1C1C1E" : "#F2F2F7";

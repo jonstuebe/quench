@@ -1,5 +1,7 @@
 import { addDays, format, setHours, setMinutes, startOfDay } from "date-fns";
+import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { SymbolView } from "expo-symbols";
 import {
   ActivityIndicator,
@@ -8,15 +10,20 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  type StyleProp,
   Text,
+  type ViewStyle,
   View,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { isHealthUnauthorizedError } from "@/lib/health/errors";
 import { calculateWaterGoalFlOz } from "@/lib/health/goal";
-import { deleteWaterSampleByUuid, getLastWaterSampleForDay } from "@/lib/health/queries";
+import {
+  deleteWaterSampleByUuid,
+  getLastDeletableWaterSampleForDay,
+} from "@/lib/health/queries";
 import {
   dayDate$,
   exerciseDayMin$,
@@ -42,6 +49,9 @@ import { WaterWidgetBackground } from "./water-widget-background";
 const ON_GRADIENT = "#ffffff";
 const ON_GRADIENT_MUTED = "rgba(255,255,255,0.78)";
 const ON_GRADIENT_SUBTLE = "rgba(255,255,255,0.55)";
+
+/** Light-mode water/sky is bright; a deep blue reads on glass and on the wave surface (white icon washes out). */
+const UNDO_ICON_TINT_LIGHT = "#0d2840";
 
 /** Dark halo so white labels stay legible over bright wave/foam in the Skia background. */
 const HERO_TEXT_SHADOW = {
@@ -85,6 +95,97 @@ type Props = {
   mode: "today" | "day";
 };
 
+function UndoLastDrinkButton({
+  onPress,
+  iconTintColor,
+  outerStyle,
+}: {
+  onPress: () => void;
+  iconTintColor: string;
+  outerStyle?: StyleProp<ViewStyle>;
+}) {
+  const pressable = (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.undoPressableInner, pressed && styles.undoBtnPressed]}
+      accessibilityLabel="Undo last drink"
+      accessibilityRole="button"
+    >
+      <SymbolView
+        name={{ ios: "arrow.uturn.backward", android: "undo" }}
+        size={20}
+        tintColor={iconTintColor}
+        resizeMode="scaleAspectFit"
+      />
+    </Pressable>
+  );
+
+  if (Platform.OS === "ios" && isLiquidGlassAvailable()) {
+    return (
+      <GlassView
+        isInteractive
+        glassEffectStyle="regular"
+        style={[styles.undoGlassOuter, outerStyle]}
+      >
+        {pressable}
+      </GlassView>
+    );
+  }
+
+  if (Platform.OS === "web") {
+    return (
+      <View style={[styles.undoSolidFallback, outerStyle]}>{pressable}</View>
+    );
+  }
+
+  return (
+    <BlurView intensity={55} tint="systemMaterial" style={[styles.undoGlassOuter, outerStyle]}>
+      {pressable}
+    </BlurView>
+  );
+}
+
+function ProgressTrackGlass({
+  children,
+  colorScheme,
+}: {
+  children: ReactNode;
+  colorScheme: "light" | "dark";
+}) {
+  const glassStyle = [
+    styles.trackGlassOuter,
+    colorScheme === "light" && styles.trackGlassOuterLight,
+  ];
+
+  if (Platform.OS === "ios" && isLiquidGlassAvailable()) {
+    return (
+      <GlassView glassEffectStyle="regular" style={glassStyle}>
+        {children}
+      </GlassView>
+    );
+  }
+
+  if (Platform.OS === "web") {
+    return (
+      <View
+        style={[
+          glassStyle,
+          styles.trackGlassWebFallback,
+          { backdropFilter: "blur(14px)" } as ViewStyle,
+        ]}
+      >
+        {children}
+      </View>
+    );
+  }
+
+  return (
+    <BlurView intensity={60} tint="systemMaterial" style={glassStyle}>
+      {children}
+    </BlurView>
+  );
+}
+
 export function WaterWidget({ mode }: Props) {
   const colorScheme = useColorScheme();
   const unit = useValue(prefs$.unit);
@@ -105,6 +206,31 @@ export function WaterWidget({ mode }: Props) {
   const weightLoaded = useValue(() => weightSync$.isLoaded.get());
   const loading = !waterLoaded || !exerciseLoaded || !weightLoaded;
 
+  const undoDayKey = format(mode === "today" ? new Date() : dayDate, "yyyy-MM-dd");
+  const [canUndoDeletable, setCanUndoDeletable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (loading || water <= 0 || Platform.OS !== "ios") {
+      setCanUndoDeletable(false);
+      return;
+    }
+    void (async () => {
+      try {
+        const d = mode === "today" ? new Date() : dayDate$.get();
+        const last = await getLastDeletableWaterSampleForDay(d);
+        if (!cancelled) {
+          setCanUndoDeletable(!!last?.uuid);
+        }
+      } catch {
+        if (!cancelled) setCanUndoDeletable(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, water, mode, undoDayKey]);
+
   const goalFlOz = calculateWaterGoalFlOz(weight, exerciseMin);
   const displayed = flOzToDisplay(water, unit);
   const displayedGoal = flOzToDisplay(goalFlOz, unit);
@@ -116,8 +242,11 @@ export function WaterWidget({ mode }: Props) {
   async function onUndo() {
     try {
       const d = mode === "today" ? new Date() : dayDate$.get();
-      const last = await getLastWaterSampleForDay(d);
-      if (!last?.uuid) return;
+      const last = await getLastDeletableWaterSampleForDay(d);
+      if (!last?.uuid) {
+        setCanUndoDeletable(false);
+        return;
+      }
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await deleteWaterSampleByUuid(last.uuid);
       if (mode === "today") await refreshTodayMetrics();
@@ -165,19 +294,12 @@ export function WaterWidget({ mode }: Props) {
         />
         <View style={styles.cardForeground}>
           <View style={styles.topBar}>
-            {water > 0 && !loading ? (
-              <Pressable
+            {water > 0 && !loading && canUndoDeletable ? (
+              <UndoLastDrinkButton
                 onPress={onUndo}
-                style={({ pressed }) => [styles.undoBtn, pressed && styles.undoBtnPressed]}
-                accessibilityLabel="Undo last drink"
-              >
-                <SymbolView
-                  name={{ ios: "arrow.uturn.backward", android: "undo" }}
-                  size={20}
-                  tintColor={ON_GRADIENT}
-                  resizeMode="scaleAspectFit"
-                />
-              </Pressable>
+                iconTintColor={colorScheme === "light" ? UNDO_ICON_TINT_LIGHT : ON_GRADIENT}
+                outerStyle={colorScheme === "light" ? styles.undoGlassOuterLight : undefined}
+              />
             ) : (
               <View style={styles.undoPlaceholder} />
             )}
@@ -211,45 +333,47 @@ export function WaterWidget({ mode }: Props) {
                 </View>
 
                 <View style={styles.trackFooter}>
-                  <View
-                    style={styles.meterColumn}
-                    accessibilityLabel={`${pct} percent of daily goal. Track is divided into ${DAY_SEGMENTS} time segments from wake-up to bedtime; each notch is centered above a time label.`}
-                  >
-                    <View style={styles.trackContainer}>
-                      <View style={styles.track}>
-                        <View style={[styles.trackFill, { width: `${trackFillPct}%` }]} />
+                  <ProgressTrackGlass colorScheme={colorScheme}>
+                    <View
+                      style={styles.meterColumn}
+                      accessibilityLabel={`${pct} percent of daily goal. Track is divided into ${DAY_SEGMENTS} time segments from wake-up to bedtime; each notch is centered above a time label.`}
+                    >
+                      <View style={styles.trackContainer}>
+                        <View style={styles.track}>
+                          <View style={[styles.trackFill, { width: `${trackFillPct}%` }]} />
+                        </View>
+                        <View style={styles.trackNotchOverlay} pointerEvents="none">
+                          {Array.from({ length: DAY_SEGMENTS }, (_, i) => (
+                            <View
+                              key={`notch-${i}`}
+                              style={[styles.segmentCell, styles.trackOverlaySegment]}
+                            >
+                              <View style={styles.segmentNotchLine} />
+                            </View>
+                          ))}
+                        </View>
                       </View>
-                      <View style={styles.trackNotchOverlay} pointerEvents="none">
-                        {Array.from({ length: DAY_SEGMENTS }, (_, i) => (
-                          <View
-                            key={`notch-${i}`}
-                            style={[styles.segmentCell, styles.trackOverlaySegment]}
-                          >
-                            <View style={styles.segmentNotchLine} />
+                      <View style={styles.notchAndLabelRow}>
+                        {segmentTimes.map((t, i) => (
+                          <View key={`${labelDayKey}-seg-${i}`} style={styles.segmentCell}>
+                            <Text
+                              style={styles.timeLabel}
+                              numberOfLines={1}
+                              {...Platform.select({
+                                ios: {
+                                  adjustsFontSizeToFit: true,
+                                  minimumFontScale: 0.75,
+                                },
+                                default: {},
+                              })}
+                            >
+                              {t}
+                            </Text>
                           </View>
                         ))}
                       </View>
                     </View>
-                    <View style={styles.notchAndLabelRow}>
-                      {segmentTimes.map((t, i) => (
-                        <View key={`${labelDayKey}-seg-${i}`} style={styles.segmentCell}>
-                          <Text
-                            style={styles.timeLabel}
-                            numberOfLines={1}
-                            {...Platform.select({
-                              ios: {
-                                adjustsFontSizeToFit: true,
-                                minimumFontScale: 0.75,
-                              },
-                              default: {},
-                            })}
-                          >
-                            {t}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
+                  </ProgressTrackGlass>
                 </View>
               </>
             )}
@@ -264,7 +388,7 @@ const styles = StyleSheet.create({
   cardOuter: {
     flex: 1,
     marginHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 0,
     minHeight: 300,
     ...Platform.select({
       ios: {
@@ -297,13 +421,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     minHeight: 44,
   },
-  undoBtn: {
+  undoGlassOuter: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(0,0,0,0.18)",
+    overflow: "hidden",
+  },
+  undoGlassOuterLight: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(13,40,64,0.28)",
+  },
+  undoPressableInner: {
+    width: "100%",
+    height: "100%",
     alignItems: "center",
     justifyContent: "center",
+  },
+  undoSolidFallback: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: "hidden",
+    backgroundColor: "rgba(0,0,0,0.18)",
   },
   undoBtnPressed: {
     opacity: 0.85,
@@ -325,6 +464,20 @@ const styles = StyleSheet.create({
   },
   trackFooter: {
     alignSelf: "stretch",
+  },
+  trackGlassOuter: {
+    alignSelf: "stretch",
+    borderRadius: 16,
+    overflow: "hidden",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  trackGlassOuterLight: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(13,40,64,0.22)",
+  },
+  trackGlassWebFallback: {
+    backgroundColor: "rgba(12, 22, 36, 0.5)",
   },
   heroRow: {
     flexDirection: "row",

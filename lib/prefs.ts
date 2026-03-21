@@ -24,7 +24,7 @@ const defaults: PrefsShape = {
   bedtime: defaultBedtime,
   wakeUp: defaultWake,
   remindersEnabled: true,
-  reminderMinutes: 20,
+  reminderMinutes: undefined,
 };
 
 export const prefs$ = observable<PrefsShape>({ ...defaults });

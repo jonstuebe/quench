@@ -6,6 +6,7 @@ import {
 } from "@kingstinct/react-native-healthkit";
 import { endOfDay, isSameDay, startOfDay } from "date-fns";
 
+import { getHealthAppBundleIdentifier } from "@/lib/health/app-bundle-id";
 import { HK_APPLE_EXERCISE_TIME, HK_BODY_MASS, HK_WATER } from "@/lib/health/ids";
 
 export async function sumWaterFlOzForDay(date: Date): Promise<number> {
@@ -99,10 +100,35 @@ export async function getLastWaterSampleForDay(date: Date) {
   return samples[samples.length - 1];
 }
 
+/**
+ * Last water sample for the day that **this app** is allowed to delete in HealthKit.
+ * Ignores entries from other apps or other bundle IDs (e.g. dev vs release).
+ */
+export async function getLastDeletableWaterSampleForDay(date: Date) {
+  const samples = await queryQuantitySamples(HK_WATER, {
+    filter: {
+      date: {
+        startDate: startOfDay(date),
+        endDate: endOfDay(date),
+      },
+    },
+    limit: 0,
+    ascending: true,
+    unit: "fl_oz_us",
+  });
+  const bundleId = getHealthAppBundleIdentifier();
+  const filtered = bundleId
+    ? samples.filter((s) => s.sourceRevision?.source?.bundleIdentifier === bundleId)
+    : samples;
+  if (filtered.length === 0) return null;
+  return filtered[filtered.length - 1];
+}
+
 export async function saveWaterFlOz(valueFlOz: number, at: Date) {
   await saveQuantitySample(HK_WATER, "fl_oz_us", valueFlOz, at, at);
 }
 
-export async function deleteWaterSampleByUuid(uuid: string) {
-  await deleteObjects(HK_WATER, { uuid });
+/** @returns number of samples HealthKit removed (0 if none matched or allowed). */
+export async function deleteWaterSampleByUuid(uuid: string): Promise<number> {
+  return await deleteObjects(HK_WATER, { uuid });
 }

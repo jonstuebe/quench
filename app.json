@@ -1,15 +1,22 @@
 {
   "expo": {
-    "name": "quench-new",
-    "slug": "quench-new",
+    "name": "Quench",
+    "slug": "quench",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "quenchnew",
+    "scheme": "quench",
     "userInterfaceStyle": "automatic",
+    "updates": {
+      "url": "https://u.expo.dev/902364c1-db18-45c1-b3fd-135f3faebcf9",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.quenchnew.app",
+      "bundleIdentifier": "com.jonstuebe.quench",
       "infoPlist": {
         "UIBackgroundModes": ["fetch"]
       }
@@ -22,7 +29,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.quenchnew.app"
+      "package": "com.jonstuebe.quench"
     },
     "web": {
       "output": "static",
@@ -33,10 +40,9 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "image": "./assets/images/splash.png",
+          "resizeMode": "cover",
+          "backgroundColor": "#000000",
           "dark": {
             "backgroundColor": "#000000"
           }
@@ -59,11 +65,17 @@
       "@react-native-community/datetimepicker",
       "expo-font",
       "expo-image",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "902364c1-db18-45c1-b3fd-135f3faebcf9"
+      }
     }
   }
 }

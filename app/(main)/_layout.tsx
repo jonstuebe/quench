@@ -2,8 +2,14 @@ import { Stack } from "expo-router";
 
 export default function MainLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="home" options={{ headerShown: false }} />
+    <Stack screenOptions={{ contentStyle: { flex: 1 } }}>
+      <Stack.Screen
+        name="home"
+        options={{
+          title: "",
+          headerShadowVisible: false,
+        }}
+      />
       <Stack.Screen
         name="insights"
         options={{
@@ -17,6 +23,7 @@ export default function MainLayout() {
         name="settings"
         options={{
           title: "Settings",
+          headerLargeTitle: true,
           headerBackButtonDisplayMode: "minimal",
           headerShadowVisible: false,
         }}

@@ -1,5 +1,5 @@
 {
-  "name": "quench-new",
+  "name": "quench",
   "version": "1.0.0",
   "private": true,
   "main": "expo-router/entry",
@@ -32,6 +32,7 @@
     "expo-blur": "~55.0.10",
     "expo-constants": "~55.0.9",
     "expo-font": "~55.0.4",
+    "expo-glass-effect": "~55.0.8",
     "expo-haptics": "~55.0.9",
     "expo-image": "~55.0.6",
     "expo-linear-gradient": "~55.0.9",
@@ -42,6 +43,7 @@
     "expo-status-bar": "~55.0.4",
     "expo-symbols": "~55.0.5",
     "expo-system-ui": "~55.0.10",
+    "expo-updates": "~55.0.14",
     "expo-web-browser": "~55.0.10",
     "react": "19.2.0",
     "react-dom": "19.2.0",

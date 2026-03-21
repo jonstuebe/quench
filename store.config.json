@@ -1,0 +1,45 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "copyright": "2022 Jon Stuebe",
+    "release": {
+      "automaticRelease": true
+    },
+    "info": {
+      "en-US": {
+        "description": "A simple water tracking app that syncs data with Apple Health Kit",
+        "keywords": ["water", "quench", "track", "tracking"],
+        "marketingUrl": "https://jonstuebe.com/apps/quench",
+        "supportUrl": "https://jonstuebe.com/apps/quench/support",
+        "title": "quench tracker",
+        "privacyPolicyUrl": "https://jonstuebe.com/apps/quench/privacy-policy"
+      }
+    },
+    "categories": ["UTILITIES", "HEALTH_AND_FITNESS"],
+    "advisory": {
+      "alcoholTobaccoOrDrugUseOrReferences": "NONE",
+      "contests": "NONE",
+      "gamblingSimulated": "NONE",
+      "horrorOrFearThemes": "NONE",
+      "matureOrSuggestiveThemes": "NONE",
+      "medicalOrTreatmentInformation": "NONE",
+      "profanityOrCrudeHumor": "NONE",
+      "sexualContentGraphicAndNudity": "NONE",
+      "sexualContentOrNudity": "NONE",
+      "violenceCartoonOrFantasy": "NONE",
+      "violenceRealistic": "NONE",
+      "violenceRealisticProlongedGraphicOrSadistic": "NONE",
+      "gambling": false,
+      "unrestrictedWebAccess": false,
+      "kidsAgeBand": null,
+      "seventeenPlus": false
+    },
+    "review": {
+      "firstName": "Jon",
+      "lastName": "Stuebe",
+      "email": "jstuebe@gmail.com",
+      "phone": "6025097994",
+      "demoRequired": false
+    }
+  }
+}

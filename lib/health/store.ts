@@ -11,7 +11,13 @@ export const dayDate$ = observable(new Date());
 export const todayWaterFlOz$ = observable(
   synced({
     initial: 0,
-    get: async () => sumWaterFlOzForDay(new Date()),
+    get: async () => {
+      try {
+        return await sumWaterFlOzForDay(new Date());
+      } catch {
+        return 0;
+      }
+    },
     subscribe: ({ refresh }) => {
       const sub = subscribeToChanges(HK_WATER, () => {
         refresh();
@@ -26,7 +32,13 @@ export const todayWaterFlOz$ = observable(
 export const todayExerciseMin$ = observable(
   synced({
     initial: 0,
-    get: async () => sumExerciseMinutesForDay(new Date()),
+    get: async () => {
+      try {
+        return await sumExerciseMinutesForDay(new Date());
+      } catch {
+        return 0;
+      }
+    },
     subscribe: ({ refresh }) => {
       const sub = subscribeToChanges(HK_APPLE_EXERCISE_TIME, () => {
         refresh();
@@ -42,8 +54,12 @@ export const weightLb$ = observable(
   synced({
     initial: 160,
     get: async () => {
-      const w = await getWeightLb();
-      return w ?? 160;
+      try {
+        const w = await getWeightLb();
+        return w ?? 160;
+      } catch {
+        return 160;
+      }
     },
     subscribe: ({ refresh }) => {
       const sub = subscribeToChanges(HK_BODY_MASS, () => {
@@ -60,8 +76,12 @@ export const waterDayFlOz$ = observable(
   synced({
     initial: 0,
     get: async () => {
-      const d = dayDate$.get();
-      return sumWaterFlOzForDay(d);
+      try {
+        const d = dayDate$.get();
+        return await sumWaterFlOzForDay(d);
+      } catch {
+        return 0;
+      }
     },
     subscribe: ({ refresh }) => {
       const sub = subscribeToChanges(HK_WATER, () => {
@@ -78,8 +98,12 @@ export const exerciseDayMin$ = observable(
   synced({
     initial: 0,
     get: async () => {
-      const d = dayDate$.get();
-      return sumExerciseMinutesForDay(d);
+      try {
+        const d = dayDate$.get();
+        return await sumExerciseMinutesForDay(d);
+      } catch {
+        return 0;
+      }
     },
     subscribe: ({ refresh }) => {
       const sub = subscribeToChanges(HK_APPLE_EXERCISE_TIME, () => {
