@@ -25,6 +25,7 @@
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
+    "@shopify/react-native-skia": "^2.5.3",
     "convert-units": "^2.3.4",
     "date-fns": "^4.1.0",
     "expo": "^55.0.8",
@@ -62,5 +63,8 @@
   },
   "patchedDependencies": {
     "expo@55.0.8": "patches/expo@55.0.8.patch"
-  }
+  },
+  "trustedDependencies": [
+    "@shopify/react-native-skia"
+  ]
 }
