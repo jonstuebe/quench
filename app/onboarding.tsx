@@ -4,23 +4,20 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { NOTIFICATION_INTERVALS, type NotificationInterval } from "@/lib/types";
 import { prefs$ } from "@/lib/prefs";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
+import { SymbolView } from "expo-symbols";
 import { useMemo } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-} from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useValue } from "@legendapp/state/react";
 
 const isIOS = Platform.OS === "ios";
+
+const REMINDER_INTERVAL_OPTIONS: { label: string; value: NotificationInterval | undefined }[] = [
+  { label: "Off", value: undefined },
+  ...NOTIFICATION_INTERVALS.map((m) => ({ label: `${m} min`, value: m })),
+];
 
 function partsToDate(hour: number, minute: number) {
   const d = new Date();
@@ -31,156 +28,151 @@ function partsToDate(hour: number, minute: number) {
 export default function OnboardingScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
-  const name = useValue(prefs$.name);
   const wake = useValue(prefs$.wakeUp);
   const bed = useValue(prefs$.bedtime);
   const reminderMinutes = useValue(prefs$.reminderMinutes);
-
-  const reminderPicker: NotificationInterval | "off" =
-    reminderMinutes === undefined ? "off" : reminderMinutes;
 
   const wakeDate = useMemo(() => partsToDate(wake.hour, wake.minute), [wake.hour, wake.minute]);
   const bedDate = useMemo(() => partsToDate(bed.hour, bed.minute), [bed.hour, bed.minute]);
 
   const grouped = colorScheme === "dark" ? "#1C1C1E" : "#FFFFFF";
   const sectionLabel = colorScheme === "dark" ? "#8E8E93" : "#6D6D70";
+  const separatorColor = colorScheme === "dark" ? "#38383A" : "#C6C6C8";
   const ctaLabel = colorScheme === "dark" ? colors.background : "#FFFFFF";
 
   function finish() {
-    prefs$.name.set(name.trim());
     prefs$.onboardingComplete.set(true);
     router.replace("/home");
   }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView behavior={isIOS ? "padding" : undefined} style={{ flex: 1 }}>
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-        >
-          <ThemedText type="title" style={styles.title}>
-            Welcome to Quench
-          </ThemedText>
-          <ThemedText style={[styles.sectionHeader, { color: sectionLabel }]}>Name</ThemedText>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
+        <ThemedText type="title" style={styles.title}>
+          Welcome to Quench
+        </ThemedText>
+
+        <ThemedText style={[styles.sectionHeader, { color: sectionLabel }]}>Schedule</ThemedText>
+        {isIOS ? (
           <View style={[styles.grouped, { backgroundColor: grouped }]}>
-            <TextInput
-              value={name}
-              onChangeText={(t) => prefs$.name.set(t)}
-              placeholder="Your name"
-              placeholderTextColor={sectionLabel}
-              autoCorrect={false}
-              autoCapitalize="words"
-              returnKeyType="done"
-              style={[styles.textField, { color: colors.text }]}
-            />
-          </View>
-
-          <ThemedText style={[styles.sectionHeader, { color: sectionLabel }]}>Schedule</ThemedText>
-          {isIOS ? (
-            <View style={[styles.grouped, { backgroundColor: grouped }]}>
-              <View
-                style={[
-                  styles.timeRow,
-                  styles.timeRowSeparator,
-                  { borderBottomColor: colors.icon + "44" },
-                ]}
-              >
-                <ThemedText style={styles.rowLabel}>Wake up</ThemedText>
-                <DateTimePicker
-                  value={wakeDate}
-                  mode="time"
-                  display="compact"
-                  onChange={(_, d) => {
-                    if (d) {
-                      prefs$.wakeUp.set({ hour: d.getHours(), minute: d.getMinutes() });
-                    }
-                  }}
-                  style={styles.timePickerCompact}
-                />
-              </View>
-              <View style={styles.timeRow}>
-                <ThemedText style={styles.rowLabel}>Bedtime</ThemedText>
-                <DateTimePicker
-                  value={bedDate}
-                  mode="time"
-                  display="compact"
-                  onChange={(_, d) => {
-                    if (d) {
-                      prefs$.bedtime.set({ hour: d.getHours(), minute: d.getMinutes() });
-                    }
-                  }}
-                  style={styles.timePickerCompact}
-                />
-              </View>
-            </View>
-          ) : (
-            <View style={styles.androidSchedule}>
-              <View style={[styles.grouped, styles.androidTimeCard, { backgroundColor: grouped }]}>
-                <ThemedText style={[styles.androidTimeHeading, { color: sectionLabel }]}>
-                  Wake up
-                </ThemedText>
-                <DateTimePicker
-                  value={wakeDate}
-                  mode="time"
-                  display="spinner"
-                  onChange={(_, d) => {
-                    if (d) {
-                      prefs$.wakeUp.set({ hour: d.getHours(), minute: d.getMinutes() });
-                    }
-                  }}
-                  style={styles.androidSpinner}
-                />
-              </View>
-              <View style={[styles.grouped, styles.androidTimeCard, { backgroundColor: grouped }]}>
-                <ThemedText style={[styles.androidTimeHeading, { color: sectionLabel }]}>
-                  Bedtime
-                </ThemedText>
-                <DateTimePicker
-                  value={bedDate}
-                  mode="time"
-                  display="spinner"
-                  onChange={(_, d) => {
-                    if (d) {
-                      prefs$.bedtime.set({ hour: d.getHours(), minute: d.getMinutes() });
-                    }
-                  }}
-                  style={styles.androidSpinner}
-                />
-              </View>
-            </View>
-          )}
-
-          <ThemedText style={[styles.sectionHeader, { color: sectionLabel }]}>
-            Reminders after you log
-          </ThemedText>
-          <View style={[styles.grouped, styles.pickerWrap, { backgroundColor: grouped }]}>
-            <Picker
-              selectedValue={reminderPicker}
-              onValueChange={(v) =>
-                prefs$.reminderMinutes.set(v === "off" ? undefined : (v as NotificationInterval))
-              }
-              {...(isIOS && {
-                themeVariant: colorScheme === "dark" ? "dark" : "light",
-              })}
+            <View
+              style={[
+                styles.timeRow,
+                styles.timeRowSeparator,
+                { borderBottomColor: colors.icon + "44" },
+              ]}
             >
-              <Picker.Item label="Off" value="off" />
-              {NOTIFICATION_INTERVALS.map((m) => (
-                <Picker.Item key={m} label={`${m} minutes`} value={m} />
-              ))}
-            </Picker>
+              <ThemedText style={styles.rowLabel}>Wake up</ThemedText>
+              <DateTimePicker
+                value={wakeDate}
+                mode="time"
+                display="compact"
+                onChange={(_, d) => {
+                  if (d) {
+                    prefs$.wakeUp.set({ hour: d.getHours(), minute: d.getMinutes() });
+                  }
+                }}
+                style={styles.timePickerCompact}
+              />
+            </View>
+            <View style={styles.timeRow}>
+              <ThemedText style={styles.rowLabel}>Bedtime</ThemedText>
+              <DateTimePicker
+                value={bedDate}
+                mode="time"
+                display="compact"
+                onChange={(_, d) => {
+                  if (d) {
+                    prefs$.bedtime.set({ hour: d.getHours(), minute: d.getMinutes() });
+                  }
+                }}
+                style={styles.timePickerCompact}
+              />
+            </View>
           </View>
+        ) : (
+          <View style={styles.androidSchedule}>
+            <View style={[styles.grouped, styles.androidTimeCard, { backgroundColor: grouped }]}>
+              <ThemedText style={[styles.androidTimeHeading, { color: sectionLabel }]}>
+                Wake up
+              </ThemedText>
+              <DateTimePicker
+                value={wakeDate}
+                mode="time"
+                display="spinner"
+                onChange={(_, d) => {
+                  if (d) {
+                    prefs$.wakeUp.set({ hour: d.getHours(), minute: d.getMinutes() });
+                  }
+                }}
+                style={styles.androidSpinner}
+              />
+            </View>
+            <View style={[styles.grouped, styles.androidTimeCard, { backgroundColor: grouped }]}>
+              <ThemedText style={[styles.androidTimeHeading, { color: sectionLabel }]}>
+                Bedtime
+              </ThemedText>
+              <DateTimePicker
+                value={bedDate}
+                mode="time"
+                display="spinner"
+                onChange={(_, d) => {
+                  if (d) {
+                    prefs$.bedtime.set({ hour: d.getHours(), minute: d.getMinutes() });
+                  }
+                }}
+                style={styles.androidSpinner}
+              />
+            </View>
+          </View>
+        )}
 
-          <Pressable
-            accessibilityRole="button"
-            style={[styles.cta, { backgroundColor: colors.tint }]}
-            onPress={finish}
-          >
-            <ThemedText style={[styles.ctaText, { color: ctaLabel }]}>Continue</ThemedText>
-          </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <ThemedText style={[styles.sectionHeader, { color: sectionLabel }]}>
+          Reminders after you log
+        </ThemedText>
+        <View style={[styles.grouped, styles.reminderList, { backgroundColor: grouped }]}>
+          {REMINDER_INTERVAL_OPTIONS.map((opt, index, arr) => {
+            const selected =
+              opt.value === undefined ? reminderMinutes == null : reminderMinutes === opt.value;
+            return (
+              <View key={String(opt.value ?? "off")}>
+                <Pressable
+                  onPress={() => prefs$.reminderMinutes.set(opt.value)}
+                  style={({ pressed }) => [styles.reminderRow, pressed && { opacity: 0.55 }]}
+                >
+                  <ThemedText style={styles.reminderRowLabel}>{opt.label}</ThemedText>
+                  {selected ? (
+                    <SymbolView
+                      name={{ ios: "checkmark", android: "check" }}
+                      size={22}
+                      tintColor={colors.tint}
+                      resizeMode="scaleAspectFit"
+                      accessibilityLabel="Selected"
+                    />
+                  ) : (
+                    <View style={styles.reminderCheckPlaceholder} />
+                  )}
+                </Pressable>
+                {index < arr.length - 1 ? (
+                  <View style={[styles.reminderSeparator, { backgroundColor: separatorColor }]} />
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          style={[styles.cta, { backgroundColor: colors.tint }]}
+          onPress={finish}
+        >
+          <ThemedText style={[styles.ctaText, { color: ctaLabel }]}>Continue</ThemedText>
+        </Pressable>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -208,12 +200,6 @@ const styles = StyleSheet.create({
   grouped: {
     borderRadius: 10,
     overflow: "hidden",
-  },
-  textField: {
-    fontSize: 17,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    minHeight: 44,
   },
   timeRow: {
     flexDirection: "row",
@@ -251,8 +237,28 @@ const styles = StyleSheet.create({
     height: 160,
     width: "100%",
   },
-  pickerWrap: {
+  reminderList: {
     marginTop: 0,
+  },
+  reminderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    minHeight: 44,
+  },
+  reminderRowLabel: {
+    fontSize: 17,
+    fontWeight: "400",
+  },
+  reminderCheckPlaceholder: {
+    width: 22,
+    height: 22,
+  },
+  reminderSeparator: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 16,
   },
   cta: {
     marginTop: 28,

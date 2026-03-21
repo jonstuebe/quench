@@ -4,19 +4,24 @@ export default function MainLayout() {
   return (
     <Stack>
       <Stack.Screen name="home" options={{ headerShown: false }} />
-      <Stack.Screen name="insights" options={{ title: "Insights" }} />
-      <Stack.Screen name="settings" options={{ title: "Settings" }} />
-      <Stack.Screen name="day/[date]" options={{ headerShown: false }} />
       <Stack.Screen
-        name="log-water"
+        name="insights"
         options={{
-          presentation: "formSheet",
-          sheetGrabberVisible: true,
-          sheetAllowedDetents: [0.45, 0.65, 0.9],
-          headerShown: false,
-          contentStyle: { backgroundColor: "transparent" },
+          title: "Insights",
+          headerLargeTitle: true,
+          headerBackButtonDisplayMode: "minimal",
+          headerShadowVisible: false,
         }}
       />
+      <Stack.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          headerBackButtonDisplayMode: "minimal",
+          headerShadowVisible: false,
+        }}
+      />
+      <Stack.Screen name="day/[date]" options={{ headerShown: false }} />
     </Stack>
   );
 }

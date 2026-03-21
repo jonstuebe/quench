@@ -17,6 +17,10 @@ export async function setupNotifications() {
   }
 }
 
+export async function cancelScheduledReminders() {
+  await cancelAllScheduledNotificationsAsync();
+}
+
 export function determineNextReminder(
   wakeUp: TimeParts,
   bedtime: TimeParts,

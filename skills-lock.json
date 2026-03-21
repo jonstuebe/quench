@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "agent-device": {
+      "source": "callstackincubator/agent-device",
+      "sourceType": "github",
+      "computedHash": "6c9f874f8dc0bd050799a324a48ebbf44adb5719e17be5901b4cb86920a73863"
+    },
     "building-native-ui": {
       "source": "expo/skills",
       "sourceType": "github",

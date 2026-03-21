@@ -1,12 +1,10 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
+import { SymbolView } from "expo-symbols";
 import { Pressable, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { prefs$ } from "@/lib/prefs";
-import { useValue } from "@legendapp/state/react";
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -18,7 +16,6 @@ function greeting(): string {
 export function HomeHeader() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
-  const name = useValue(prefs$.name);
 
   return (
     <View
@@ -32,20 +29,29 @@ export function HomeHeader() {
       }}
     >
       <View>
-        <ThemedText style={{ fontSize: 20, fontWeight: "600" }}>{greeting()}</ThemedText>
         <ThemedText type="title" style={{ fontSize: 28, fontWeight: "700" }}>
-          {name || "Quench"}
+          {greeting()}
         </ThemedText>
       </View>
       <View style={{ flexDirection: "row", gap: 12 }}>
         <Link href="/insights" asChild>
           <Pressable accessibilityRole="button">
-            <Ionicons name="stats-chart" size={24} color={colors.text} />
+            <SymbolView
+              name={{ ios: "chart.bar.fill", android: "bar_chart" }}
+              size={24}
+              tintColor={colors.text}
+              resizeMode="scaleAspectFit"
+            />
           </Pressable>
         </Link>
         <Link href="/settings" asChild>
           <Pressable accessibilityRole="button">
-            <Ionicons name="settings-outline" size={24} color={colors.text} />
+            <SymbolView
+              name={{ ios: "gearshape.fill", android: "settings" }}
+              size={24}
+              tintColor={colors.text}
+              resizeMode="scaleAspectFit"
+            />
           </Pressable>
         </Link>
       </View>

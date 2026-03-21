@@ -1,5 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { SymbolView } from "expo-symbols";
 import { LinearGradient } from "expo-linear-gradient";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -87,7 +87,12 @@ export function WaterWidget({ mode }: Props) {
             style={({ pressed }) => [styles.undoBtn, pressed && styles.undoBtnPressed]}
             accessibilityLabel="Undo last drink"
           >
-            <Ionicons name="arrow-undo" size={20} color={ON_GRADIENT} />
+            <SymbolView
+              name={{ ios: "arrow.uturn.backward", android: "undo" }}
+              size={20}
+              tintColor={ON_GRADIENT}
+              resizeMode="scaleAspectFit"
+            />
           </Pressable>
         ) : (
           <View style={styles.undoPlaceholder} />
