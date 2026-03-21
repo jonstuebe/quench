@@ -1,12 +1,24 @@
+import { addDays, format, setHours, setMinutes, startOfDay } from "date-fns";
 import * as Haptics from "expo-haptics";
-import { SymbolView } from "expo-symbols";
 import { LinearGradient } from "expo-linear-gradient";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { SymbolView } from "expo-symbols";
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { isHealthUnauthorizedError } from "@/lib/health/errors";
 import { calculateWaterGoalFlOz } from "@/lib/health/goal";
-import { deleteWaterSampleByUuid, getLastWaterSampleForDay } from "@/lib/health/queries";
+import {
+  deleteWaterSampleByUuid,
+  getLastWaterSampleForDay,
+} from "@/lib/health/queries";
 import {
   dayDate$,
   exerciseDayMin$,
@@ -23,11 +35,39 @@ import {
   weightSync$,
 } from "@/lib/health/store";
 import { prefs$ } from "@/lib/prefs";
+import type { TimeParts } from "@/lib/types";
 import { flOzToDisplay, formatVolumeLabel } from "@/lib/volume";
 import { useValue } from "@legendapp/state/react";
 
 const ON_GRADIENT = "#ffffff";
-const ON_GRADIENT_MUTED = "rgba(255,255,255,0.88)";
+const ON_GRADIENT_MUTED = "rgba(255,255,255,0.78)";
+const ON_GRADIENT_SUBTLE = "rgba(255,255,255,0.55)";
+
+/** Equal segments across your wake window; notches divide that span. */
+const DAY_SEGMENTS = 6;
+const TRACK_H = 16;
+
+/** Wall-clock time at the end of each segment from wake-up through bedtime. */
+function segmentEndTimeLabels(
+  day: Date,
+  segments: number,
+  wake: TimeParts,
+  bed: TimeParts,
+): string[] {
+  const start = startOfDay(day);
+  const wakeAt = setMinutes(setHours(start, wake.hour), wake.minute);
+  let bedAt = setMinutes(setHours(start, bed.hour), bed.minute);
+  if (bedAt <= wakeAt) {
+    bedAt = addDays(bedAt, 1);
+  }
+  const spanMs = bedAt.getTime() - wakeAt.getTime();
+  const out: string[] = [];
+  for (let i = 0; i < segments; i++) {
+    const end = new Date(wakeAt.getTime() + ((i + 1) / segments) * spanMs);
+    out.push(format(end, "ha").replace(/\s/g, "").toLowerCase());
+  }
+  return out;
+}
 
 type Props = {
   mode: "today" | "day";
@@ -36,16 +76,25 @@ type Props = {
 export function WaterWidget({ mode }: Props) {
   const colorScheme = useColorScheme();
   const unit = useValue(prefs$.unit);
+  const wakeUp = useValue(prefs$.wakeUp);
+  const bedtime = useValue(prefs$.bedtime);
+  const dayDate = useValue(dayDate$);
 
   const water = useValue(mode === "today" ? todayWaterFlOz$ : waterDayFlOz$);
-  const exerciseMin = useValue(mode === "today" ? todayExerciseMin$ : exerciseDayMin$);
+  const exerciseMin = useValue(
+    mode === "today" ? todayExerciseMin$ : exerciseDayMin$,
+  );
   const weight = useValue(weightLb$);
 
   const waterLoaded = useValue(() =>
-    mode === "today" ? todayWaterSync$.isLoaded.get() : waterDaySync$.isLoaded.get(),
+    mode === "today"
+      ? todayWaterSync$.isLoaded.get()
+      : waterDaySync$.isLoaded.get(),
   );
   const exerciseLoaded = useValue(() =>
-    mode === "today" ? todayExerciseSync$.isLoaded.get() : exerciseDaySync$.isLoaded.get(),
+    mode === "today"
+      ? todayExerciseSync$.isLoaded.get()
+      : exerciseDaySync$.isLoaded.get(),
   );
   const weightLoaded = useValue(() => weightSync$.isLoaded.get());
   const loading = !waterLoaded || !exerciseLoaded || !weightLoaded;
@@ -53,7 +102,8 @@ export function WaterWidget({ mode }: Props) {
   const goalFlOz = calculateWaterGoalFlOz(weight, exerciseMin);
   const displayed = flOzToDisplay(water, unit);
   const displayedGoal = flOzToDisplay(goalFlOz, unit);
-  const pct = goalFlOz > 0 ? Math.min(100, Math.round((water / goalFlOz) * 100)) : 0;
+  const pct =
+    goalFlOz > 0 ? Math.min(100, Math.round((water / goalFlOz) * 100)) : 0;
   const label = formatVolumeLabel(unit);
 
   async function onUndo() {
@@ -75,16 +125,36 @@ export function WaterWidget({ mode }: Props) {
     }
   }
 
-  const gradientStart = colorScheme === "dark" ? "#0d3558" : "#3b8ad6";
-  const gradientEnd = colorScheme === "dark" ? "#061f36" : "#1e6bb8";
+  const gradientStart = colorScheme === "dark" ? "#1c3552" : "#5eb0f0";
+  const gradientMid = colorScheme === "dark" ? "#0f2840" : "#3d94e0";
+  const gradientEnd = colorScheme === "dark" ? "#081a2e" : "#1e6ec4";
+
+  const kickerLabel =
+    mode === "today" ? "Today" : format(dayDate, "EEE, MMM d");
+
+  const labelDay = mode === "today" ? new Date() : dayDate;
+  const segmentTimes = segmentEndTimeLabels(
+    labelDay,
+    DAY_SEGMENTS,
+    wakeUp,
+    bedtime,
+  );
+  const labelDayKey = format(labelDay, "yyyy-MM-dd");
 
   return (
-    <LinearGradient colors={[gradientStart, gradientEnd]} style={styles.card}>
+    <LinearGradient
+      colors={[gradientStart, gradientMid, gradientEnd]}
+      locations={[0, 0.45, 1]}
+      style={styles.card}
+    >
       <View style={styles.topBar}>
         {water > 0 && !loading ? (
           <Pressable
             onPress={onUndo}
-            style={({ pressed }) => [styles.undoBtn, pressed && styles.undoBtnPressed]}
+            style={({ pressed }) => [
+              styles.undoBtn,
+              pressed && styles.undoBtnPressed,
+            ]}
             accessibilityLabel="Undo last drink"
           >
             <SymbolView
@@ -99,21 +169,75 @@ export function WaterWidget({ mode }: Props) {
         )}
       </View>
 
-      <View style={styles.center}>
+      <View style={styles.body}>
         {loading ? (
-          <ActivityIndicator color={ON_GRADIENT} size="large" />
+          <View style={styles.heroCenter}>
+            <ActivityIndicator color={ON_GRADIENT} size="large" />
+          </View>
         ) : (
           <>
-            <View style={styles.heroRow}>
-              <Text style={styles.heroPct}>{pct}</Text>
-              <Text style={styles.heroPctSuffix}>%</Text>
+            <View style={styles.heroCenter}>
+              <Text style={styles.kicker}>{kickerLabel}</Text>
+              <View style={styles.heroRow}>
+                <Text
+                  style={[
+                    styles.heroPct,
+                    Platform.OS === "ios" && { fontVariant: ["tabular-nums"] },
+                  ]}
+                >
+                  {pct}
+                </Text>
+                <Text style={styles.heroPctSuffix}>%</Text>
+              </View>
+              <Text style={styles.volumeLine}>
+                {displayed.toFixed(unit === "fl-oz" ? 1 : 0)} {label} of{" "}
+                {displayedGoal.toFixed(unit === "fl-oz" ? 1 : 0)} {label}
+              </Text>
             </View>
-            <Text style={styles.volumeLine}>
-              {displayed.toFixed(unit === "fl-oz" ? 1 : 0)} {label} of{" "}
-              {displayedGoal.toFixed(unit === "fl-oz" ? 1 : 0)} {label}
-            </Text>
-            <View style={styles.track}>
-              <View style={[styles.trackFill, { width: `${pct}%` }]} />
+
+            <View style={styles.trackFooter}>
+              <View
+                style={styles.meterColumn}
+                accessibilityLabel={`${pct} percent of daily goal. Track is divided into ${DAY_SEGMENTS} time segments from wake-up to bedtime; each notch is centered above a time label.`}
+              >
+                <View style={styles.trackContainer}>
+                  <View style={styles.track}>
+                    <View style={[styles.trackFill, { width: `${pct}%` }]} />
+                  </View>
+                  <View style={styles.trackNotchOverlay} pointerEvents="none">
+                    {Array.from({ length: DAY_SEGMENTS }, (_, i) => (
+                      <View
+                        key={`notch-${i}`}
+                        style={[styles.segmentCell, styles.trackOverlaySegment]}
+                      >
+                        <View style={styles.segmentNotchLine} />
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <View style={styles.notchAndLabelRow}>
+                  {segmentTimes.map((t, i) => (
+                    <View
+                      key={`${labelDayKey}-seg-${i}`}
+                      style={styles.segmentCell}
+                    >
+                      <Text
+                        style={styles.timeLabel}
+                        numberOfLines={1}
+                        {...Platform.select({
+                          ios: {
+                            adjustsFontSizeToFit: true,
+                            minimumFontScale: 0.75,
+                          },
+                          default: {},
+                        })}
+                      >
+                        {t}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
             </View>
           </>
         )}
@@ -125,17 +249,30 @@ export function WaterWidget({ mode }: Props) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    borderRadius: 20,
+    borderRadius: 28,
     marginHorizontal: 16,
     marginBottom: 12,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 20,
-    minHeight: 280,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 22,
+    minHeight: 300,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.22)",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.18,
+        shadowRadius: 28,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   topBar: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "flex-start",
     alignItems: "center",
     minHeight: 44,
   },
@@ -143,7 +280,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(0,0,0,0.22)",
+    backgroundColor: "rgba(0,0,0,0.18)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -154,45 +291,111 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
   },
-  center: {
+  body: {
     flex: 1,
+    minHeight: 0,
+  },
+  heroCenter: {
+    flex: 1,
+    minHeight: 0,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 4,
+  },
+  trackFooter: {
+    alignSelf: "stretch",
+  },
+  kicker: {
+    fontSize: 13,
+    fontWeight: "600",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    color: ON_GRADIENT_SUBTLE,
+    marginBottom: 4,
   },
   heroRow: {
     flexDirection: "row",
     alignItems: "baseline",
   },
   heroPct: {
-    fontSize: 72,
-    fontWeight: "700",
+    fontSize: 64,
+    fontWeight: "600",
+    letterSpacing: Platform.OS === "ios" ? -1.5 : 0,
     color: ON_GRADIENT,
   },
   heroPctSuffix: {
-    fontSize: 30,
+    fontSize: 26,
     fontWeight: "600",
     color: ON_GRADIENT_MUTED,
-    marginLeft: 2,
+    marginLeft: 1,
   },
   volumeLine: {
-    marginTop: 6,
+    marginTop: 8,
     fontSize: 17,
     fontWeight: "500",
     color: ON_GRADIENT_MUTED,
     textAlign: "center",
+    letterSpacing: Platform.OS === "ios" ? -0.2 : 0,
+  },
+  meterColumn: {
+    width: "100%",
+  },
+  trackContainer: {
+    position: "relative",
+    width: "100%",
+    height: TRACK_H,
   },
   track: {
-    alignSelf: "stretch",
-    marginTop: 20,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "rgba(255,255,255,0.28)",
+    height: TRACK_H,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.2)",
     overflow: "hidden",
   },
   trackFill: {
     height: "100%",
-    borderRadius: 5,
+    borderRadius: 8,
     backgroundColor: ON_GRADIENT,
+  },
+  trackNotchOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: "row",
+    alignItems: "stretch",
+  },
+  trackOverlaySegment: {
+    minHeight: TRACK_H,
+  },
+  segmentCell: {
+    flex: 1,
+    minWidth: 0,
+    position: "relative",
+    alignItems: "center",
+    paddingHorizontal: 0,
+  },
+  /** Centered in the segment column via flex (avoids left:50% rounding drift on iOS). */
+  segmentNotchLine: {
+    width: StyleSheet.hairlineWidth,
+    height: TRACK_H,
+    backgroundColor: "rgba(255,255,255,0.32)",
+  },
+  notchAndLabelRow: {
+    flexDirection: "row",
+    marginTop: 4,
+    width: "100%",
+  },
+  timeLabel: {
+    width: "100%",
+    fontSize: 10,
+    fontWeight: "500",
+    letterSpacing: 0.2,
+    color: ON_GRADIENT_SUBTLE,
+    textAlign: "center",
+    ...Platform.select({
+      ios: { fontVariant: ["tabular-nums"] },
+      default: {},
+    }),
   },
 });
