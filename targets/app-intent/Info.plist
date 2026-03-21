@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>EXAppExtensionAttributes</key>
+    <dict>
+      <key>EXExtensionPointIdentifier</key>
+      <string>com.apple.appintents-extension</string>
+    </dict>
+    <key>NSHealthShareUsageDescription</key>
+    <string>Quench uses Health to read and write your water intake, exercise time, and weight to calculate your daily goal.</string>
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>Quench saves the water you log to the Health app.</string>
+  </dict>
+</plist>

@@ -16,6 +16,7 @@
     "check": "oxlint . && oxfmt --check ."
   },
   "dependencies": {
+    "@bacons/apple-targets": "^4.0.6",
     "@expo/ui": "~55.0.5",
     "@expo/vector-icons": "^15.0.3",
     "@kingstinct/react-native-healthkit": "^13.3.1",

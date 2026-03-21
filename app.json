@@ -18,7 +18,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.jonstuebe.quench",
       "infoPlist": {
-        "UIBackgroundModes": ["fetch"]
+        "UIBackgroundModes": [
+          "fetch"
+        ]
       }
     },
     "android": {
@@ -67,7 +69,8 @@
       "expo-font",
       "expo-image",
       "expo-web-browser",
-      "expo-updates"
+      "expo-updates",
+      "@bacons/apple-targets"
     ],
     "experiments": {
       "typedRoutes": true,
