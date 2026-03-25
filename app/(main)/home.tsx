@@ -26,7 +26,7 @@ function WaterWidgetProgressFooter() {
           paddingHorizontal: 12,
         }}
       >
-        <WaterDayProgressTrack mode="today" />
+        <WaterDayProgressTrack mode="today" showCurrentTimeMarker />
       </GlassView>
     </View>
   );

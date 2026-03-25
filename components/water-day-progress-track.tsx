@@ -1,4 +1,5 @@
 import { addDays, format, setHours, setMinutes, startOfDay } from "date-fns";
+import { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -50,12 +51,17 @@ type Props = {
   mode: WaterWidgetMode;
   /** Outer padding matching the old `ProgressTrackGlass` inset. */
   style?: StyleProp<ViewStyle>;
+  showCurrentTimeMarker?: boolean;
 };
 
 /**
  * Day timeline bar + time labels (no glass wrapper). Used inside `LogWaterPanel` and the home screen.
  */
-export function WaterDayProgressTrack({ mode, style }: Props) {
+export function WaterDayProgressTrack({
+  mode,
+  style,
+  showCurrentTimeMarker = false,
+}: Props) {
   const colorScheme = useColorScheme();
   const { water, goalFlOz, loading } = useWaterShaderUniforms(mode);
   const wakeUp = useValue(prefs$.wakeUp);
@@ -73,6 +79,27 @@ export function WaterDayProgressTrack({ mode, style }: Props) {
 
   const pct = goalFlOz > 0 ? Math.round((water / goalFlOz) * 100) : 0;
   const trackFillPct = Math.min(100, pct);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    if (!showCurrentTimeMarker || mode !== "today") return;
+    const tick = () => setNow(new Date());
+    const interval = setInterval(tick, 60_000);
+    return () => clearInterval(interval);
+  }, [mode, showCurrentTimeMarker]);
+
+  const start = startOfDay(labelDay);
+  const wakeAt = setMinutes(setHours(start, wakeUp.hour), wakeUp.minute);
+  let bedAt = setMinutes(setHours(start, bedtime.hour), bedtime.minute);
+  if (bedAt <= wakeAt) {
+    bedAt = addDays(bedAt, 1);
+  }
+  const spanMs = Math.max(1, bedAt.getTime() - wakeAt.getTime());
+  const markerNow = mode === "today" ? now : labelDay;
+  const markerFractionRaw =
+    (markerNow.getTime() - wakeAt.getTime()) / spanMs;
+  const markerFraction = Math.max(0, Math.min(1, markerFractionRaw));
+  const markerLeftPct = markerFraction * 100;
 
   if (loading) {
     return null;
@@ -126,7 +153,7 @@ export function WaterDayProgressTrack({ mode, style }: Props) {
                     flex: 1,
                     minWidth: 0,
                     position: "relative",
-                    alignItems: "center",
+                    alignItems: "flex-end",
                     paddingHorizontal: 0,
                   },
                   { minHeight: TRACK_H },
@@ -147,6 +174,33 @@ export function WaterDayProgressTrack({ mode, style }: Props) {
               </View>
             ))}
           </View>
+          {showCurrentTimeMarker && mode === "today" ? (
+            <View
+              pointerEvents="none"
+              style={{
+                position: "absolute",
+                top: 0,
+                bottom: 0,
+                left: `${markerLeftPct}%`,
+                justifyContent: "center",
+                transform: [{ translateX: -1 }],
+              }}
+            >
+              <View
+                style={[
+                  {
+                    width: 2,
+                    height: TRACK_H,
+                    borderRadius: 1,
+                    backgroundColor: "rgba(255,255,255,0.95)",
+                  },
+                  colorScheme === "light" && {
+                    backgroundColor: "rgba(13, 40, 64, 0.86)",
+                  },
+                ]}
+              />
+            </View>
+          ) : null}
         </View>
         <View style={{ flexDirection: "row", marginTop: 4, width: "100%" }}>
           {segmentTimes.map((t, i) => (
@@ -156,18 +210,17 @@ export function WaterDayProgressTrack({ mode, style }: Props) {
                 flex: 1,
                 minWidth: 0,
                 position: "relative",
-                alignItems: "center",
+                alignItems: "flex-end",
                 paddingHorizontal: 0,
               }}
             >
               <Text
                 style={[
                   {
-                    width: "100%",
                     fontSize: 11,
                     fontWeight: "600",
                     letterSpacing: 0.2,
-                    textAlign: "center",
+                    textAlign: "right",
                     fontVariant: ["tabular-nums"],
                   },
                   colorScheme === "light"
