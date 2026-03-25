@@ -12,7 +12,7 @@ import type { WaterWidgetMode } from "@/hooks/use-water-shader-uniforms";
 import * as Haptics from "expo-haptics";
 import { format } from "date-fns";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Platform } from "react-native";
+import { Alert } from "react-native";
 
 export function useWaterUndoLastDrink({
   mode,
@@ -34,7 +34,7 @@ export function useWaterUndoLastDrink({
 
   useEffect(() => {
     let cancelled = false;
-    if (!enabled || loading || water <= 0 || Platform.OS !== "ios") {
+    if (!enabled || loading || water <= 0) {
       setCanUndoDeletable(false);
       return;
     }

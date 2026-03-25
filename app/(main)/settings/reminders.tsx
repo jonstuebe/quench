@@ -7,12 +7,12 @@ import { prefs$ } from "@/lib/prefs";
 import { NOTIFICATION_INTERVALS, type NotificationInterval } from "@/lib/types";
 import { SymbolView } from "expo-symbols";
 import { useCallback } from "react";
-import { Platform, PlatformColor, Pressable, ScrollView, Text, View } from "react-native";
+import { PlatformColor, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useValue } from "@legendapp/state/react";
 
-import { SectionHeader, styles } from "@/components/settings-layout";
+import { SectionHeader } from "@/components/settings-layout";
 
 const REMINDER_INTERVAL_OPTIONS: { label: string; value: NotificationInterval | undefined }[] = [
   { label: "Disabled", value: undefined },
@@ -46,10 +46,17 @@ export default function SettingsRemindersScreen() {
 
   return (
     <ScrollView
-      style={[styles.safe, { backgroundColor: pageBg }]}
-      contentInsetAdjustmentBehavior={Platform.OS === "ios" ? "never" : undefined}
+      style={[{ flex: 1 }, { backgroundColor: pageBg }]}
+      contentInsetAdjustmentBehavior="never"
       removeClippedSubviews={false}
-      contentContainerStyle={[styles.scroll, { paddingBottom: Math.max(48, insets.bottom + 88) }]}
+      contentContainerStyle={[
+        {
+          paddingHorizontal: 20,
+          paddingTop: 12,
+          paddingBottom: 40,
+        },
+        { paddingBottom: Math.max(48, insets.bottom + 88) },
+      ]}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
     >
@@ -57,10 +64,30 @@ export default function SettingsRemindersScreen() {
         <SectionHeader color={secondaryLabel} first>
           Reminder after logging
         </SectionHeader>
-        <Text style={[styles.sectionCaption, { color: secondaryLabel }]}>
+        <Text
+          style={[
+            {
+              fontSize: 13,
+              lineHeight: 18,
+              marginTop: 2,
+              marginBottom: 16,
+            },
+            { color: secondaryLabel },
+          ]}
+        >
           Follow-up nudges after you log water. Choose Disabled to stop reminder notifications.
         </Text>
-        <View collapsable={false} style={[styles.checklistGroup, { backgroundColor: groupBg }]}>
+        <View
+          collapsable={false}
+          style={[
+            {
+              borderRadius: 10,
+              marginBottom: 4,
+              alignSelf: "stretch",
+            },
+            { backgroundColor: groupBg },
+          ]}
+        >
           {REMINDER_INTERVAL_OPTIONS.map((opt, index, arr) => {
             const remindersOn = remindersEnabledRaw !== false;
             const selected =
@@ -81,23 +108,43 @@ export default function SettingsRemindersScreen() {
                     prefs$.remindersEnabled.set(true);
                     await reschedule();
                   }}
-                  style={({ pressed }) => [styles.checklistRow, pressed && { opacity: 0.55 }]}
+                  style={({ pressed }) => [
+                    {
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      paddingVertical: 12,
+                      paddingHorizontal: 16,
+                      minHeight: 44,
+                    },
+                    pressed && { opacity: 0.55 },
+                  ]}
                 >
-                  <Text style={[styles.checklistLabel, { color: labelColor }]}>{opt.label}</Text>
+                  <Text style={[{ fontSize: 17, fontWeight: "400" }, { color: labelColor }]}>
+                    {opt.label}
+                  </Text>
                   {selected ? (
                     <SymbolView
-                      name={{ ios: "checkmark", android: "check" }}
+                      name="checkmark"
                       size={22}
                       tintColor={tintColor}
                       resizeMode="scaleAspectFit"
                       accessibilityLabel="Selected"
                     />
                   ) : (
-                    <View style={styles.checklistCheckPlaceholder} />
+                    <View style={{ width: 22, height: 22 }} />
                   )}
                 </Pressable>
                 {index < arr.length - 1 ? (
-                  <View style={[styles.checklistSeparator, { backgroundColor: separatorColor }]} />
+                  <View
+                    style={[
+                      {
+                        height: StyleSheet.hairlineWidth,
+                        marginLeft: 16,
+                      },
+                      { backgroundColor: separatorColor },
+                    ]}
+                  />
                 ) : null}
               </View>
             );

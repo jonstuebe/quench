@@ -1,6 +1,5 @@
 import { addDays, format, setHours, setMinutes, startOfDay } from "date-fns";
 import {
-  Platform,
   StyleSheet,
   Text,
   View,
@@ -21,12 +20,6 @@ import { useValue } from "@legendapp/state/react";
 
 const ON_GRADIENT = "#ffffff";
 const ON_GRADIENT_SUBTLE = "rgba(255,255,255,0.55)";
-
-const TIME_LABEL_TEXT_SHADOW = {
-  textShadowColor: "rgba(0,0,0,0.26)",
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 2,
-};
 
 /** Equal segments across your wake window; notches divide that span. */
 const DAY_SEGMENTS = 6;
@@ -86,54 +79,114 @@ export function WaterDayProgressTrack({ mode, style }: Props) {
   }
 
   return (
-    <View style={[styles.meterWrap, style]}>
+    <View style={[{ alignSelf: "stretch" }, style]}>
       <View
-        style={styles.meterColumn}
+        style={{ width: "100%" }}
         accessibilityLabel={`${pct} percent of daily goal. Track is divided into ${DAY_SEGMENTS} time segments from wake-up to bedtime; each notch is centered above a time label.`}
       >
-        <View style={styles.trackContainer}>
+        <View style={{ position: "relative", width: "100%", height: TRACK_H }}>
           <View
             style={[
-              styles.track,
-              colorScheme === "light" && styles.trackLight,
+              {
+                height: TRACK_H,
+                borderRadius: 8,
+                backgroundColor: "rgba(255,255,255,0.2)",
+                overflow: "hidden",
+              },
+              colorScheme === "light" && {
+                backgroundColor: "rgba(13, 40, 64, 0.16)",
+              },
             ]}
           >
-            <View style={[styles.trackFill, { width: `${trackFillPct}%` }]} />
+            <View
+              style={{
+                height: "100%",
+                width: `${trackFillPct}%`,
+                backgroundColor: ON_GRADIENT,
+              }}
+            />
           </View>
-          <View style={styles.trackNotchOverlay} pointerEvents="none">
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              flexDirection: "row",
+              alignItems: "stretch",
+            }}
+            pointerEvents="none"
+          >
             {Array.from({ length: DAY_SEGMENTS }, (_, i) => (
               <View
                 key={`notch-${i}`}
-                style={[styles.segmentCell, styles.trackOverlaySegment]}
+                style={[
+                  {
+                    flex: 1,
+                    minWidth: 0,
+                    position: "relative",
+                    alignItems: "center",
+                    paddingHorizontal: 0,
+                  },
+                  { minHeight: TRACK_H },
+                ]}
               >
                 <View
                   style={[
-                    styles.segmentNotchLine,
-                    colorScheme === "light" && styles.segmentNotchLineLight,
+                    {
+                      width: StyleSheet.hairlineWidth,
+                      height: TRACK_H,
+                      backgroundColor: "rgba(255,255,255,0.32)",
+                    },
+                    colorScheme === "light" && {
+                      backgroundColor: "rgba(13, 40, 64, 0.3)",
+                    },
                   ]}
                 />
               </View>
             ))}
           </View>
         </View>
-        <View style={styles.notchAndLabelRow}>
+        <View style={{ flexDirection: "row", marginTop: 4, width: "100%" }}>
           {segmentTimes.map((t, i) => (
-            <View key={`${labelDayKey}-seg-${i}`} style={styles.segmentCell}>
+            <View
+              key={`${labelDayKey}-seg-${i}`}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                position: "relative",
+                alignItems: "center",
+                paddingHorizontal: 0,
+              }}
+            >
               <Text
                 style={[
-                  styles.timeLabel,
+                  {
+                    width: "100%",
+                    fontSize: 11,
+                    fontWeight: "600",
+                    letterSpacing: 0.2,
+                    textAlign: "center",
+                    fontVariant: ["tabular-nums"],
+                  },
                   colorScheme === "light"
-                    ? styles.timeLabelLight
-                    : styles.timeLabelDark,
+                    ? {
+                        color: glassLabelOnBrightLight,
+                        textShadowColor: "rgba(255,255,255,0.35)",
+                        textShadowOffset: { width: 0, height: 0.5 },
+                        textShadowRadius: 1.5,
+                      }
+                    : {
+                        color: ON_GRADIENT_SUBTLE,
+                        textShadowColor: "rgba(0,0,0,0.26)",
+                        textShadowOffset: { width: 0, height: 1 },
+                        textShadowRadius: 2,
+                      },
                 ]}
                 numberOfLines={1}
-                {...Platform.select({
-                  ios: {
-                    adjustsFontSizeToFit: true,
-                    minimumFontScale: 0.75,
-                  },
-                  default: {},
-                })}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
               >
                 {t}
               </Text>
@@ -144,83 +197,3 @@ export function WaterDayProgressTrack({ mode, style }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  meterWrap: {
-    alignSelf: "stretch",
-  },
-  meterColumn: {
-    width: "100%",
-  },
-  trackContainer: {
-    position: "relative",
-    width: "100%",
-    height: TRACK_H,
-  },
-  track: {
-    height: TRACK_H,
-    borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    overflow: "hidden",
-  },
-  trackLight: {
-    backgroundColor: "rgba(13, 40, 64, 0.16)",
-  },
-  trackFill: {
-    height: "100%",
-    backgroundColor: ON_GRADIENT,
-  },
-  trackNotchOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: "row",
-    alignItems: "stretch",
-  },
-  trackOverlaySegment: {
-    minHeight: TRACK_H,
-  },
-  segmentCell: {
-    flex: 1,
-    minWidth: 0,
-    position: "relative",
-    alignItems: "center",
-    paddingHorizontal: 0,
-  },
-  segmentNotchLine: {
-    width: StyleSheet.hairlineWidth,
-    height: TRACK_H,
-    backgroundColor: "rgba(255,255,255,0.32)",
-  },
-  segmentNotchLineLight: {
-    backgroundColor: "rgba(13, 40, 64, 0.3)",
-  },
-  notchAndLabelRow: {
-    flexDirection: "row",
-    marginTop: 4,
-    width: "100%",
-  },
-  timeLabel: {
-    width: "100%",
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.2,
-    textAlign: "center",
-    ...Platform.select({
-      ios: { fontVariant: ["tabular-nums"] },
-      default: {},
-    }),
-  },
-  timeLabelDark: {
-    color: ON_GRADIENT_SUBTLE,
-    ...TIME_LABEL_TEXT_SHADOW,
-  },
-  timeLabelLight: {
-    color: glassLabelOnBrightLight,
-    textShadowColor: "rgba(255,255,255,0.35)",
-    textShadowOffset: { width: 0, height: 0.5 },
-    textShadowRadius: 1.5,
-  },
-});

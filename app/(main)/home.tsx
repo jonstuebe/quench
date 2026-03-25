@@ -1,12 +1,12 @@
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 
 import { GoalConfettiOverlay } from "@/components/goal-confetti-overlay";
 import { LogWaterPanel } from "@/components/log-water-panel";
 import { WaterDayProgressTrack } from "@/components/water-day-progress-track";
 import { WaterHomeShaderBackdrop } from "@/components/water-home-shader-backdrop";
-import { WaterWidget } from "@/components/water-widget";
+import { WaterWidgetImmersive } from "@/components/water-widget-immersive";
 import { useWaterShaderUniforms } from "@/hooks/use-water-shader-uniforms";
 import { useWaterUndoLastDrink } from "@/hooks/use-water-undo-last-drink";
 import { GlassView } from "expo-glass-effect";
@@ -15,8 +15,17 @@ function WaterWidgetProgressFooter() {
   const { loading } = useWaterShaderUniforms("today");
   if (loading) return null;
   return (
-    <View style={styles.trackFooter}>
-      <GlassView glassEffectStyle="regular" style={styles.trackGlassOuter}>
+    <View style={{ alignSelf: "stretch" }}>
+      <GlassView
+        glassEffectStyle="regular"
+        style={{
+          alignSelf: "stretch",
+          borderRadius: 16,
+          overflow: "hidden",
+          paddingVertical: 10,
+          paddingHorizontal: 12,
+        }}
+      >
         <WaterDayProgressTrack mode="today" />
       </GlassView>
     </View>
@@ -66,12 +75,15 @@ export default function HomeScreen() {
       </Stack.Toolbar>
       <View style={{ flex: 1 }}>
         <WaterHomeShaderBackdrop />
-        <View style={styles.widgetColumn}>
-          <WaterWidget
-            mode="today"
-            surfaceStyle="immersive"
-            showUndoInWidget={false}
-          />
+        <View
+          style={{
+            flex: 1,
+            minHeight: 0,
+            marginHorizontal: 16,
+            marginBottom: 4,
+          }}
+        >
+          <WaterWidgetImmersive mode="today" />
           <WaterWidgetProgressFooter />
         </View>
         <LogWaterPanel />
@@ -80,28 +92,3 @@ export default function HomeScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, minHeight: 0 },
-  widgetWrap: { flex: 1, minHeight: 0, alignSelf: "stretch" },
-  widgetColumn: {
-    flex: 1,
-    minHeight: 0,
-    marginHorizontal: 16,
-    marginBottom: 4,
-  },
-  trackFooter: {
-    alignSelf: "stretch",
-  },
-  trackGlassOuter: {
-    alignSelf: "stretch",
-    borderRadius: 16,
-    overflow: "hidden",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-});

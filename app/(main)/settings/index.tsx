@@ -6,12 +6,12 @@ import { formatVolumeLabel } from "@/lib/volume";
 import { DatePicker, Divider, Host, Picker, Text as SText, VStack } from "@expo/ui/swift-ui";
 import { controlSize, pickerStyle, tag } from "@expo/ui/swift-ui/modifiers";
 import { useCallback, useMemo } from "react";
-import { Platform, PlatformColor, ScrollView, Text, View } from "react-native";
+import { PlatformColor, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useValue } from "@legendapp/state/react";
 
-import { SectionHeader, styles, timePartsToDate } from "@/components/settings-layout";
+import { SectionHeader, timePartsToDate } from "@/components/settings-layout";
 
 const UNITS: VolumeDisplayUnit[] = ["fl-oz", "ml", "cup", "pt_us"];
 
@@ -44,17 +44,28 @@ export default function SettingsGeneralScreen() {
 
   return (
     <ScrollView
-      style={[styles.safe, { backgroundColor: pageBg }]}
-      contentInsetAdjustmentBehavior={Platform.OS === "ios" ? "never" : undefined}
-      contentContainerStyle={[styles.scroll, { paddingBottom: Math.max(40, insets.bottom + 72) }]}
+      style={[{ flex: 1 }, { backgroundColor: pageBg }]}
+      contentInsetAdjustmentBehavior="never"
+      contentContainerStyle={[
+        {
+          paddingHorizontal: 20,
+          paddingTop: 12,
+          paddingBottom: 40,
+        },
+        { paddingBottom: Math.max(40, insets.bottom + 72) },
+      ]}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
     >
       <SectionHeader color={secondaryLabel} first>
         Volume unit
       </SectionHeader>
-      <View style={styles.controlBlock}>
-        <Host matchContents colorScheme={colorScheme} style={styles.hostFill}>
+      <View style={{ marginBottom: 4 }}>
+        <Host
+          matchContents
+          colorScheme={colorScheme}
+          style={{ width: "100%", alignSelf: "stretch" }}
+        >
           <Picker
             selection={unit}
             onSelectionChange={(s) => prefs$.unit.set(s as VolumeDisplayUnit)}
@@ -70,12 +81,34 @@ export default function SettingsGeneralScreen() {
       </View>
 
       <SectionHeader color={secondaryLabel}>Wake & bedtime</SectionHeader>
-      <Text style={[styles.sectionCaption, { color: secondaryLabel }]}>
+      <Text
+        style={[
+          {
+            fontSize: 13,
+            lineHeight: 18,
+            marginTop: 2,
+            marginBottom: 16,
+          },
+          { color: secondaryLabel },
+        ]}
+      >
         Used for follow-up reminder windows after you log water.
       </Text>
-      <View style={[styles.group, { backgroundColor: groupBg }]}>
-        <View style={styles.groupInnerTight}>
-          <Host matchContents colorScheme={colorScheme} style={styles.hostFill}>
+      <View
+        style={[
+          {
+            borderRadius: 10,
+            overflow: "hidden",
+          },
+          { backgroundColor: groupBg },
+        ]}
+      >
+        <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
+          <Host
+            matchContents
+            colorScheme={colorScheme}
+            style={{ width: "100%", alignSelf: "stretch" }}
+          >
             <VStack spacing={10} alignment="leading">
               <DatePicker
                 title="Wake up"

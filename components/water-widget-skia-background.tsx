@@ -7,7 +7,7 @@ import {
   vec,
 } from "@shopify/react-native-skia";
 import { useEffect, useMemo, useRef } from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import {
   Easing,
   useDerivedValue,
@@ -179,7 +179,16 @@ export function WaterWidgetSkiaBackground({
   }
 
   return (
-    <View style={styles.fill} pointerEvents="none">
+    <View
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+      }}
+      pointerEvents="none"
+    >
       <Canvas style={{ width, height }}>
         <Fill>
           <Shader source={effect} uniforms={uniforms} />
@@ -188,9 +197,3 @@ export function WaterWidgetSkiaBackground({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  fill: {
-    ...StyleSheet.absoluteFillObject,
-  },
-});

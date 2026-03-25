@@ -5,7 +5,6 @@ import {
   titleFormat,
   titleFormatMonth,
 } from "@/components/insights/insights-a11y";
-import { styles } from "@/components/insights/insights-styles";
 import { MetricRow } from "@/components/insights/metric-row";
 import {
   getDayProgress,
@@ -36,18 +35,15 @@ import {
   PlatformColor,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   View,
-  type ColorValue,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useValue } from "@legendapp/state/react";
 
-import {
-  SectionHeader,
-  styles as sharedStyles,
-} from "@/components/settings-layout";
+import { SectionHeader } from "@/components/settings-layout";
 
 export default function InsightsScreen() {
   const unit = useValue(prefs$.unit);
@@ -61,18 +57,11 @@ export default function InsightsScreen() {
   const tertiaryLabel = PlatformColor("tertiaryLabel");
   const tintColor = PlatformColor("tint");
   /** `tint` does not always resolve on `Text`; `link` matches Settings-style link rows. */
-  const healthLinkColor =
-    process.env.EXPO_OS === "ios" ? PlatformColor("link") : tintColor;
+  const healthLinkColor = PlatformColor("link");
   const separatorColor = PlatformColor("separator");
 
-  const successColor =
-    process.env.EXPO_OS === "ios"
-      ? PlatformColor("systemGreen")
-      : ("#34C759" as ColorValue);
-  const missedColor =
-    process.env.EXPO_OS === "ios"
-      ? PlatformColor("systemOrange")
-      : ("#FF9500" as ColorValue);
+  const successColor = PlatformColor("systemGreen");
+  const missedColor = PlatformColor("systemOrange");
 
   const [loading, setLoading] = useState(true);
   const [todayYtd, setTodayYtd] = useState(0);
@@ -143,15 +132,25 @@ export default function InsightsScreen() {
 
   return (
     <ScrollView
-      style={[sharedStyles.safe, { backgroundColor: pageBg }]}
+      style={[{ flex: 1 }, { backgroundColor: pageBg }]}
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={[
-        sharedStyles.scroll,
+        {
+          paddingHorizontal: 20,
+          paddingTop: 12,
+          paddingBottom: 40,
+        },
         { paddingBottom: Math.max(40, insets.bottom + 24) },
       ]}
     >
       {loading ? (
-        <View style={styles.loading}>
+        <View
+          style={{
+            paddingVertical: 48,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           <ActivityIndicator color={tintColor} />
         </View>
       ) : (
@@ -160,15 +159,26 @@ export default function InsightsScreen() {
             Today vs yesterday
           </SectionHeader>
           <Text
-            style={[sharedStyles.sectionCaption, { color: secondaryLabel }]}
+            style={[
+              {
+                fontSize: 13,
+                lineHeight: 18,
+                marginTop: 2,
+                marginBottom: 16,
+              },
+              { color: secondaryLabel },
+            ]}
           >
             Totals so far today compared to the same time yesterday.
           </Text>
           <View
             style={[
-              sharedStyles.group,
+              {
+                borderRadius: 10,
+                overflow: "hidden",
+              },
               { backgroundColor: groupBg },
-              styles.groupContinuous,
+              { borderCurve: "continuous" },
             ]}
           >
             <MetricRow
@@ -178,7 +188,10 @@ export default function InsightsScreen() {
             />
             <View
               style={[
-                sharedStyles.checklistSeparator,
+                {
+                  height: StyleSheet.hairlineWidth,
+                  marginLeft: 16,
+                },
                 { backgroundColor: separatorColor },
               ]}
             />
@@ -191,16 +204,27 @@ export default function InsightsScreen() {
 
           <SectionHeader color={secondaryLabel}>Full day vs goal</SectionHeader>
           <Text
-            style={[sharedStyles.sectionCaption, { color: secondaryLabel }]}
+            style={[
+              {
+                fontSize: 13,
+                lineHeight: 18,
+                marginTop: 2,
+                marginBottom: 16,
+              },
+              { color: secondaryLabel },
+            ]}
           >
             Based on your weight and exercise for each day in Health. Tap any
             day below to review or log water.
           </Text>
           <View
             style={[
-              sharedStyles.group,
+              {
+                borderRadius: 10,
+                overflow: "hidden",
+              },
               { backgroundColor: groupBg },
-              styles.groupContinuous,
+              { borderCurve: "continuous" },
             ]}
           >
             {todayFull ? (
@@ -213,7 +237,7 @@ export default function InsightsScreen() {
                   label,
                 )}
                 onPress={() => onNavigateDay(todayFull.date)}
-                style={({ pressed }) => [pressed && styles.pressed]}
+                style={({ pressed }) => [pressed && { opacity: 0.55 }]}
               >
                 <GoalSummaryRow
                   title="Today (so far)"
@@ -231,7 +255,10 @@ export default function InsightsScreen() {
             {todayFull && yesterdayFull ? (
               <View
                 style={[
-                  sharedStyles.checklistSeparator,
+                  {
+                    height: StyleSheet.hairlineWidth,
+                    marginLeft: 16,
+                  },
                   { backgroundColor: separatorColor },
                 ]}
               />
@@ -246,7 +273,7 @@ export default function InsightsScreen() {
                   label,
                 )}
                 onPress={() => onNavigateDay(yesterdayFull.date)}
-                style={({ pressed }) => [pressed && styles.pressed]}
+                style={({ pressed }) => [pressed && { opacity: 0.55 }]}
               >
                 <GoalSummaryRow
                   title="Yesterday"
@@ -266,9 +293,13 @@ export default function InsightsScreen() {
           <SectionHeader color={secondaryLabel}>Last 7 days</SectionHeader>
           <View
             style={[
-              sharedStyles.checklistGroup,
+              {
+                borderRadius: 10,
+                marginBottom: 4,
+                alignSelf: "stretch",
+              },
               { backgroundColor: groupBg },
-              styles.groupContinuous,
+              { borderCurve: "continuous" },
             ]}
           >
             {week.map((row, index, arr) => (
@@ -293,7 +324,10 @@ export default function InsightsScreen() {
                 {index < arr.length - 1 ? (
                   <View
                     style={[
-                      sharedStyles.checklistSeparator,
+                      {
+                        height: StyleSheet.hairlineWidth,
+                        marginLeft: 16,
+                      },
                       { backgroundColor: separatorColor },
                     ]}
                   />
@@ -305,9 +339,13 @@ export default function InsightsScreen() {
           <SectionHeader color={secondaryLabel}>This month</SectionHeader>
           <View
             style={[
-              sharedStyles.checklistGroup,
+              {
+                borderRadius: 10,
+                marginBottom: 4,
+                alignSelf: "stretch",
+              },
               { backgroundColor: groupBg },
-              styles.groupContinuous,
+              { borderCurve: "continuous" },
             ]}
           >
             {month.map((row, index, arr) => (
@@ -332,7 +370,10 @@ export default function InsightsScreen() {
                 {index < arr.length - 1 ? (
                   <View
                     style={[
-                      sharedStyles.checklistSeparator,
+                      {
+                        height: StyleSheet.hairlineWidth,
+                        marginLeft: 16,
+                      },
                       { backgroundColor: separatorColor },
                     ]}
                   />
@@ -341,48 +382,61 @@ export default function InsightsScreen() {
             ))}
           </View>
 
-          {process.env.EXPO_OS === "ios" ? (
-            <>
-              <SectionHeader color={secondaryLabel}>Health</SectionHeader>
+          <SectionHeader color={secondaryLabel}>Health</SectionHeader>
+          <View
+            style={[
+              {
+                borderRadius: 10,
+                overflow: "hidden",
+              },
+              { backgroundColor: groupBg },
+              { borderCurve: "continuous" },
+            ]}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open Apple Health"
+              onPress={() => void Linking.openURL("x-apple-health://")}
+              style={({ pressed }) => [
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  minHeight: 44,
+                },
+                { alignSelf: "stretch", width: "100%" },
+                pressed && { opacity: 0.55 },
+              ]}
+            >
               <View
-                style={[
-                  sharedStyles.group,
-                  { backgroundColor: groupBg },
-                  styles.groupContinuous,
-                ]}
+                style={{
+                  flex: 1,
+                  marginRight: 10,
+                  minWidth: 0,
+                  justifyContent: "center",
+                }}
               >
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Open Apple Health"
-                  onPress={() => void Linking.openURL("x-apple-health://")}
-                  style={({ pressed }) => [
-                    sharedStyles.checklistRow,
-                    styles.healthRowPressable,
-                    pressed && styles.pressed,
+                <Text
+                  style={[
+                    { fontSize: 17, fontWeight: "400" },
+                    { color: healthLinkColor },
                   ]}
                 >
-                  <View style={styles.healthRowLabel}>
-                    <Text
-                      style={[
-                        sharedStyles.checklistLabel,
-                        { color: healthLinkColor },
-                      ]}
-                    >
-                      Open Apple Health
-                    </Text>
-                  </View>
-                  <SymbolView
-                    name="arrow.up.right.square"
-                    size={18}
-                    tintColor={healthLinkColor}
-                    resizeMode="scaleAspectFit"
-                    accessibilityElementsHidden
-                    importantForAccessibility="no"
-                  />
-                </Pressable>
+                  Open Apple Health
+                </Text>
               </View>
-            </>
-          ) : null}
+              <SymbolView
+                name="arrow.up.right.square"
+                size={18}
+                tintColor={healthLinkColor}
+                resizeMode="scaleAspectFit"
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+              />
+            </Pressable>
+          </View>
         </>
       )}
     </ScrollView>

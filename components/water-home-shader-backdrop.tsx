@@ -1,5 +1,5 @@
 import { useWaterShaderUniforms } from "@/hooks/use-water-shader-uniforms";
-import { StyleSheet, useWindowDimensions, View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
 
 import { WaterWidgetBackground } from "./water-widget-background";
 
@@ -22,9 +22,29 @@ export function WaterHomeShaderBackdrop() {
   }
 
   return (
-    <View style={styles.layer} pointerEvents="none">
+    <View
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+      }}
+      pointerEvents="none"
+    >
       {loading ? (
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colorAir }]} />
+        <View
+          style={[
+            {
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              bottom: 0,
+            },
+            { backgroundColor: colorAir },
+          ]}
+        />
       ) : (
         <WaterWidgetBackground
           width={width}
@@ -39,9 +59,3 @@ export function WaterHomeShaderBackdrop() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  layer: {
-    ...StyleSheet.absoluteFillObject,
-  },
-});

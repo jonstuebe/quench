@@ -45,6 +45,12 @@ type Props = {
   dateParam?: string;
 };
 
+/** Matches `WaterWidget` card `marginHorizontal` so the column aligns with the progress card. */
+const COLUMN_MARGIN_H = 16;
+
+/** Space between stacked log controls; `WaterWidget` bottom inset matches this above the panel. */
+export const LOG_WATER_VERTICAL_STACK_GAP = 4;
+
 export function LogWaterPanel({ dateParam }: Props) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
@@ -97,21 +103,39 @@ export function LogWaterPanel({ dateParam }: Props) {
   return (
     <View
       style={[
-        styles.root,
+        { paddingTop: 0 },
         {
           backgroundColor: "transparent",
           paddingBottom: insets.bottom + 12,
         },
       ]}
     >
-      <View style={styles.column}>
+      <View style={{ marginHorizontal: COLUMN_MARGIN_H, alignSelf: "stretch" }}>
         <GlassView
           glassEffectStyle="regular"
           isInteractive
-          style={styles.unifiedGlass}
+          style={{
+            borderRadius: 16,
+            overflow: "hidden",
+            alignSelf: "stretch",
+          }}
         >
-          <View style={styles.body}>
-            <Host matchContents style={styles.pickerHost}>
+          <View
+            style={{
+              alignItems: "center",
+              paddingTop: 4,
+              paddingBottom: 8,
+              paddingHorizontal: 4,
+            }}
+          >
+            <Host
+              matchContents
+              style={{
+                width: "100%",
+                minHeight: 200,
+                alignSelf: "stretch",
+              }}
+            >
               <Picker
                 selection={idx}
                 onSelectionChange={(s) =>
@@ -129,20 +153,30 @@ export function LogWaterPanel({ dateParam }: Props) {
           </View>
           <View
             style={[
-              styles.addDivider,
-              colorScheme === "light" && styles.addDividerLight,
+              {
+                borderTopWidth: StyleSheet.hairlineWidth,
+                borderTopColor: "rgba(255,255,255,0.22)",
+                marginHorizontal: 8,
+              },
+              colorScheme === "light" && {
+                borderTopColor: "rgba(13,40,64,0.12)",
+              },
             ]}
           />
           <Pressable
             style={({ pressed }) => [
-              styles.addInner,
-              pressed && styles.addPressed,
+              {
+                paddingVertical: 14,
+                alignItems: "center",
+                alignSelf: "stretch",
+              },
+              pressed && { opacity: 0.85 },
             ]}
             onPress={onAdd}
           >
             <ThemedText
               style={[
-                styles.addTxt,
+                { fontSize: 17, fontWeight: "600" },
                 {
                   color:
                     colorScheme === "light"
@@ -159,71 +193,3 @@ export function LogWaterPanel({ dateParam }: Props) {
     </View>
   );
 }
-
-/** Matches `WaterWidget` card `marginHorizontal` so the column aligns with the progress card. */
-const COLUMN_MARGIN_H = 16;
-
-/** Space between stacked log controls; `WaterWidget` bottom inset matches this above the panel. */
-export const LOG_WATER_VERTICAL_STACK_GAP = 4;
-
-const styles = StyleSheet.create({
-  root: {
-    paddingTop: 0,
-  },
-  column: {
-    marginHorizontal: COLUMN_MARGIN_H,
-    alignSelf: "stretch",
-  },
-  unifiedGlass: {
-    borderRadius: 16,
-    overflow: "hidden",
-    alignSelf: "stretch",
-  },
-  body: {
-    alignItems: "center",
-    paddingTop: 4,
-    paddingBottom: 8,
-    paddingHorizontal: 4,
-  },
-  pickerHost: {
-    width: "100%",
-    minHeight: 200,
-    alignSelf: "stretch",
-  },
-  fallback: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    width: "100%",
-  },
-  step: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: "#00000018",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepTxt: { fontSize: 24, fontWeight: "500" },
-  big: { fontSize: 28, fontWeight: "600", minWidth: 140, textAlign: "center" },
-  addDivider: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255,255,255,0.22)",
-    marginHorizontal: 8,
-  },
-  addDividerLight: {
-    borderTopColor: "rgba(13,40,64,0.12)",
-  },
-  addInner: {
-    paddingVertical: 14,
-    alignItems: "center",
-    alignSelf: "stretch",
-  },
-  addPressed: {
-    opacity: 0.85,
-  },
-  addTxt: { fontSize: 17, fontWeight: "600" },
-});

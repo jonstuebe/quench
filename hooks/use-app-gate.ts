@@ -1,7 +1,6 @@
 import { syncState, when } from "@legendapp/state";
 import { useValue } from "@legendapp/state/react";
 import { useEffect, useState } from "react";
-import { Platform } from "react-native";
 
 import { ensureHealthKitAuthorization, healthKitAvailable } from "@/lib/health/authorize";
 import { prefs$ } from "@/lib/prefs";
@@ -16,7 +15,7 @@ export function useAppGate() {
     (async () => {
       try {
         await when(syncState(prefs$).isPersistLoaded);
-        if (Platform.OS === "ios" && healthKitAvailable()) {
+        if (healthKitAvailable()) {
           await ensureHealthKitAuthorization();
         }
       } catch {
@@ -30,7 +29,7 @@ export function useAppGate() {
     };
   }, []);
 
-  const iosOk = Platform.OS === "ios" && healthKitAvailable();
+  const iosOk = healthKitAvailable();
   const showUnsupported = ready && persistLoaded && !iosOk;
   const showOnboarding = ready && persistLoaded && iosOk && !onboardingComplete;
   const showMain = ready && persistLoaded && iosOk && onboardingComplete;

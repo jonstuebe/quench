@@ -1,4 +1,4 @@
-import { SectionHeader, styles as settingsStyles, timePartsToDate } from "@/components/settings-layout";
+import { SectionHeader, timePartsToDate } from "@/components/settings-layout";
 import { ThemedText } from "@/components/themed-text";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -9,12 +9,10 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useMemo } from "react";
-import { Platform, PlatformColor, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { PlatformColor, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useValue } from "@legendapp/state/react";
-
-const isIOS = Platform.OS === "ios";
 
 const REMINDER_INTERVAL_OPTIONS: { label: string; value: NotificationInterval | undefined }[] = [
   { label: "Disabled", value: undefined },
@@ -37,8 +35,7 @@ export default function OnboardingScreen() {
   const sectionLabel = colorScheme === "dark" ? "#8E8E93" : "#6D6D70";
   const separatorColor = colorScheme === "dark" ? "#38383A" : "#C6C6C8";
   const ctaLabel = colorScheme === "dark" ? colors.background : "#FFFFFF";
-  const ctaBackground =
-    isIOS && colorScheme === "light" ? PlatformColor("systemBlue") : colors.tint;
+  const ctaBackground = colorScheme === "light" ? PlatformColor("systemBlue") : colors.tint;
 
   function finish() {
     prefs$.onboardingComplete.set(true);
@@ -61,117 +58,103 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView
-      style={[styles.safe, { backgroundColor: colors.background }]}
+      style={[{ flex: 1 }, { backgroundColor: colors.background }]}
       edges={["left", "right"]}
     >
-      <View style={styles.body}>
+      <View style={{ flex: 1 }}>
         <ScrollView
-          style={styles.scrollView}
+          style={{ flex: 1 }}
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={[settingsStyles.scroll, { paddingBottom: 16 }]}
+          contentContainerStyle={[
+            {
+              paddingHorizontal: 20,
+              paddingTop: 12,
+              paddingBottom: 40,
+            },
+            { paddingBottom: 16 },
+          ]}
           keyboardShouldPersistTaps="handled"
         >
           <SectionHeader color={sectionLabel} first>
             Schedule
           </SectionHeader>
-          {isIOS ? (
+          <View
+            style={[
+              {
+                borderRadius: 10,
+                overflow: "hidden",
+              },
+              {
+                borderRadius: 10,
+                marginBottom: 4,
+                alignSelf: "stretch",
+              },
+              { backgroundColor: grouped },
+            ]}
+          >
             <View
               style={[
-                settingsStyles.group,
-                settingsStyles.checklistGroup,
-                { backgroundColor: grouped },
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  minHeight: 44,
+                },
+                { borderBottomWidth: StyleSheet.hairlineWidth },
+                { borderBottomColor: colors.icon + "44" },
               ]}
             >
-              <View
-                style={[
-                  settingsStyles.checklistRow,
-                  styles.timeRowSeparator,
-                  { borderBottomColor: colors.icon + "44" },
-                ]}
-              >
-                <ThemedText style={settingsStyles.checklistLabel}>Wake up</ThemedText>
-                <DateTimePicker
-                  value={wakeDate}
-                  mode="time"
-                  display="compact"
-                  onChange={(_, d) => {
-                    if (d) {
-                      prefs$.wakeUp.set({ hour: d.getHours(), minute: d.getMinutes() });
-                    }
-                  }}
-                  style={styles.timePickerCompact}
-                />
-              </View>
-              <View style={settingsStyles.checklistRow}>
-                <ThemedText style={settingsStyles.checklistLabel}>Bedtime</ThemedText>
-                <DateTimePicker
-                  value={bedDate}
-                  mode="time"
-                  display="compact"
-                  onChange={(_, d) => {
-                    if (d) {
-                      prefs$.bedtime.set({ hour: d.getHours(), minute: d.getMinutes() });
-                    }
-                  }}
-                  style={styles.timePickerCompact}
-                />
-              </View>
+              <ThemedText style={{ fontSize: 17, fontWeight: "400" }}>Wake up</ThemedText>
+              <DateTimePicker
+                value={wakeDate}
+                mode="time"
+                display="compact"
+                onChange={(_, d) => {
+                  if (d) {
+                    prefs$.wakeUp.set({ hour: d.getHours(), minute: d.getMinutes() });
+                  }
+                }}
+                style={{ marginRight: 8 }}
+              />
             </View>
-          ) : (
-            <View style={styles.androidSchedule}>
-              <View
-                style={[
-                  settingsStyles.group,
-                  settingsStyles.checklistGroup,
-                  styles.androidTimeCard,
-                  { backgroundColor: grouped },
-                ]}
-              >
-                <ThemedText style={[styles.androidTimeHeading, { color: sectionLabel }]}>
-                  Wake up
-                </ThemedText>
-                <DateTimePicker
-                  value={wakeDate}
-                  mode="time"
-                  display="spinner"
-                  onChange={(_, d) => {
-                    if (d) {
-                      prefs$.wakeUp.set({ hour: d.getHours(), minute: d.getMinutes() });
-                    }
-                  }}
-                  style={styles.androidSpinner}
-                />
-              </View>
-              <View
-                style={[
-                  settingsStyles.group,
-                  settingsStyles.checklistGroup,
-                  styles.androidTimeCard,
-                  { backgroundColor: grouped },
-                ]}
-              >
-                <ThemedText style={[styles.androidTimeHeading, { color: sectionLabel }]}>
-                  Bedtime
-                </ThemedText>
-                <DateTimePicker
-                  value={bedDate}
-                  mode="time"
-                  display="spinner"
-                  onChange={(_, d) => {
-                    if (d) {
-                      prefs$.bedtime.set({ hour: d.getHours(), minute: d.getMinutes() });
-                    }
-                  }}
-                  style={styles.androidSpinner}
-                />
-              </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                minHeight: 44,
+              }}
+            >
+              <ThemedText style={{ fontSize: 17, fontWeight: "400" }}>Bedtime</ThemedText>
+              <DateTimePicker
+                value={bedDate}
+                mode="time"
+                display="compact"
+                onChange={(_, d) => {
+                  if (d) {
+                    prefs$.bedtime.set({ hour: d.getHours(), minute: d.getMinutes() });
+                  }
+                }}
+                style={{ marginRight: 8 }}
+              />
             </View>
-          )}
+          </View>
 
           <SectionHeader color={sectionLabel}>Reminders after you log</SectionHeader>
           <View
             collapsable={false}
-            style={[settingsStyles.checklistGroup, { backgroundColor: grouped }]}
+            style={[
+              {
+                borderRadius: 10,
+                marginBottom: 4,
+                alignSelf: "stretch",
+              },
+              { backgroundColor: grouped },
+            ]}
           >
             {REMINDER_INTERVAL_OPTIONS.map((opt, index, arr) => {
               const remindersOn = remindersEnabledRaw !== false;
@@ -184,27 +167,37 @@ export default function OnboardingScreen() {
                   <Pressable
                     onPress={() => onReminderOptionPress(opt)}
                     style={({ pressed }) => [
-                      settingsStyles.checklistRow,
+                      {
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        minHeight: 44,
+                      },
                       pressed && { opacity: 0.55 },
                     ]}
                   >
-                    <ThemedText style={settingsStyles.checklistLabel}>{opt.label}</ThemedText>
+                    <ThemedText style={{ fontSize: 17, fontWeight: "400" }}>{opt.label}</ThemedText>
                     {selected ? (
                       <SymbolView
-                        name={{ ios: "checkmark", android: "check" }}
+                        name="checkmark"
                         size={22}
                         tintColor={colors.tint}
                         resizeMode="scaleAspectFit"
                         accessibilityLabel="Selected"
                       />
                     ) : (
-                      <View style={settingsStyles.checklistCheckPlaceholder} />
+                      <View style={{ width: 22, height: 22 }} />
                     )}
                   </Pressable>
                   {index < arr.length - 1 ? (
                     <View
                       style={[
-                        settingsStyles.checklistSeparator,
+                        {
+                          height: StyleSheet.hairlineWidth,
+                          marginLeft: 16,
+                        },
                         { backgroundColor: separatorColor },
                       ]}
                     />
@@ -217,67 +210,33 @@ export default function OnboardingScreen() {
 
         <View
           style={[
-            styles.ctaFooter,
+            {
+              paddingHorizontal: 20,
+              paddingTop: 12,
+            },
             { paddingBottom: Math.max(insets.bottom, 16), backgroundColor: colors.background },
           ]}
         >
           <Pressable
             accessibilityRole="button"
-            style={[styles.cta, { backgroundColor: ctaBackground }]}
+            style={[
+              {
+                paddingVertical: 14,
+                borderRadius: 12,
+                alignItems: "center",
+                minHeight: 50,
+                justifyContent: "center",
+              },
+              { backgroundColor: ctaBackground },
+            ]}
             onPress={finish}
           >
-            <ThemedText style={[styles.ctaText, { color: ctaLabel }]}>Continue</ThemedText>
+            <ThemedText style={[{ fontSize: 17, fontWeight: "600" }, { color: ctaLabel }]}>
+              Continue
+            </ThemedText>
           </Pressable>
         </View>
       </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  body: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  timeRowSeparator: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  timePickerCompact: {
-    marginRight: 8,
-  },
-  androidSchedule: {
-    gap: 12,
-  },
-  androidTimeCard: {
-    paddingTop: 8,
-    paddingBottom: 4,
-  },
-  androidTimeHeading: {
-    fontSize: 13,
-    fontWeight: "600",
-    paddingHorizontal: 16,
-    marginBottom: 4,
-  },
-  androidSpinner: {
-    height: 160,
-    width: "100%",
-  },
-  ctaFooter: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-  },
-  cta: {
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    minHeight: 50,
-    justifyContent: "center",
-  },
-  ctaText: {
-    fontSize: 17,
-    fontWeight: "600",
-  },
-});

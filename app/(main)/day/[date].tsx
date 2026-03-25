@@ -1,5 +1,5 @@
 import { LogWaterPanel } from "@/components/log-water-panel";
-import { WaterWidget } from "@/components/water-widget";
+import { WaterWidgetCard } from "@/components/water-widget-card";
 import { ThemedText } from "@/components/themed-text";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -9,7 +9,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { format, isAfter, parseISO, startOfDay } from "date-fns";
 import { useCallback, useMemo } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function DayScreen() {
@@ -42,9 +42,17 @@ export default function DayScreen() {
   const dateParam = format(parsed, "yyyy-MM-dd");
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.header}>
+    <View style={[{ flex: 1 }, { backgroundColor: colors.background }]}>
+      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 8,
+            paddingBottom: 8,
+          }}
+        >
           <Pressable onPress={() => router.back()} accessibilityRole="button">
             <Ionicons name="chevron-back" size={28} color={colors.text} />
           </Pressable>
@@ -53,24 +61,11 @@ export default function DayScreen() {
           </ThemedText>
           <View style={{ width: 28 }} />
         </View>
-        <View style={styles.widgetWrap}>
-          <WaterWidget mode="day" />
+        <View style={{ flex: 1 }}>
+          <WaterWidgetCard mode="day" />
         </View>
       </SafeAreaView>
       <LogWaterPanel dateParam={dateParam} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safe: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 8,
-    paddingBottom: 8,
-  },
-  widgetWrap: { flex: 1 },
-});

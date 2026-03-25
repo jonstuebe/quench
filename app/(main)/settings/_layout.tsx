@@ -1,10 +1,9 @@
 import { NativeTabs } from "expo-router/unstable-native-tabs";
-import { Platform } from "react-native";
 
 /** Settings-only native tab bar (nested under the main stack). See https://docs.expo.dev/versions/latest/sdk/router/native-tabs/ */
 export default function SettingsTabsLayout() {
   return (
-    <NativeTabs blurEffect={Platform.OS === "ios" ? "systemChromeMaterial" : undefined}>
+    <NativeTabs blurEffect="systemChromeMaterial">
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>General</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon

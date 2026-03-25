@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { StyleSheet, useWindowDimensions, View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
 import { Confetti } from "react-native-fast-confetti";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -42,7 +42,17 @@ export function GoalConfettiOverlay({ runId }: Props) {
   return (
     <View
       pointerEvents="none"
-      style={[styles.layer, { zIndex: 999 }]}
+      style={[
+        {
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: 0,
+          bottom: 0,
+          overflow: "visible",
+        },
+        { zIndex: 999 },
+      ]}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
@@ -63,18 +73,8 @@ export function GoalConfettiOverlay({ runId }: Props) {
         sizeVariation={0.14}
         verticalSpacing={18}
         width={width}
-        containerStyle={styles.confettiContainer}
+        containerStyle={{ zIndex: 999 }}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  layer: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: "visible",
-  },
-  confettiContainer: {
-    zIndex: 999,
-  },
-});

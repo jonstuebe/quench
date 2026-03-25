@@ -1,9 +1,7 @@
 import type { DayProgress } from "@/lib/health/day-progress";
-import { styles as sharedStyles } from "@/components/settings-layout";
 import { Text, View, type ColorValue } from "react-native";
 
 import { GoalStatusGlyph } from "./goal-status-glyph";
-import { styles } from "./insights-styles";
 
 export function GoalSummaryRow({
   title,
@@ -32,14 +30,55 @@ export function GoalSummaryRow({
       : `${fmt(row.waterFlOz)} ${label}`;
 
   return (
-    <View style={styles.goalSummary} accessibilityElementsHidden>
-      <View style={styles.goalSummaryText}>
-        <Text style={[sharedStyles.checklistLabel, { color: labelColor }]}>{title}</Text>
-        <Text style={[styles.goalSummarySub, { color: tertiaryLabel }]}>{ratio}</Text>
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        gap: 12,
+      }}
+      accessibilityElementsHidden
+    >
+      <View style={{ flex: 1, gap: 4 }}>
+        <Text style={[{ fontSize: 17, fontWeight: "400" }, { color: labelColor }]}>{title}</Text>
+        <Text
+          style={[
+            {
+              fontSize: 13,
+              lineHeight: 18,
+              fontVariant: ["tabular-nums"],
+            },
+            { color: tertiaryLabel },
+          ]}
+        >
+          {ratio}
+        </Text>
       </View>
-      <View style={styles.goalSummaryTrail}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          flexShrink: 0,
+        }}
+      >
         {row.goalFlOz > 0 ? (
-          <Text style={[styles.pctText, { color: labelColor }]}>{row.pct}%</Text>
+          <Text
+            style={[
+              {
+                fontSize: 15,
+                fontWeight: "600",
+                fontVariant: ["tabular-nums"],
+                minWidth: 40,
+                textAlign: "right",
+              },
+              { color: labelColor },
+            ]}
+          >
+            {row.pct}%
+          </Text>
         ) : null}
         <GoalStatusGlyph
           row={row}
