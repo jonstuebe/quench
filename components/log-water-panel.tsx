@@ -164,7 +164,7 @@ export function LogWaterPanel({ dateParam }: Props) {
 const COLUMN_MARGIN_H = 16;
 
 /** Space between stacked log controls; `WaterWidget` bottom inset matches this above the panel. */
-export const LOG_WATER_VERTICAL_STACK_GAP = 18;
+export const LOG_WATER_VERTICAL_STACK_GAP = 4;
 
 const styles = StyleSheet.create({
   root: {

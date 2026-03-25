@@ -1,6 +1,6 @@
 import { GlassView } from "expo-glass-effect";
 import { SymbolView } from "expo-symbols";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -16,17 +16,16 @@ import {
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useWaterShaderUniforms } from "@/hooks/use-water-shader-uniforms";
 import { useWaterUndoLastDrink } from "@/hooks/use-water-undo-last-drink";
+import { prefs$ } from "@/lib/prefs";
 import {
   flOzToDisplay,
   formatDisplayVolumeValue,
   formatVolumeLabel,
 } from "@/lib/volume";
-import { prefs$ } from "@/lib/prefs";
 import { useValue } from "@legendapp/state/react";
 
-import { glassLabelOnBrightLight } from "@/constants/theme";
 import { LOG_WATER_VERTICAL_STACK_GAP } from "@/components/log-water-panel";
-import { WaterDayProgressTrack } from "@/components/water-day-progress-track";
+import { glassLabelOnBrightLight } from "@/constants/theme";
 import { WaterWidgetBackground } from "./water-widget-background";
 
 const ON_GRADIENT = "#ffffff";
@@ -77,14 +76,6 @@ function UndoLastDrinkButton({
   return (
     <GlassView isInteractive style={[styles.undoGlassOuter, outerStyle]}>
       {pressable}
-    </GlassView>
-  );
-}
-
-function ProgressTrackGlass({ children }: { children: ReactNode }) {
-  return (
-    <GlassView glassEffectStyle="regular" style={styles.trackGlassOuter}>
-      {children}
     </GlassView>
   );
 }
@@ -192,14 +183,6 @@ export function WaterWidget({
                     {formatDisplayVolumeValue(displayedGoal, unit)} {label}
                   </Text>
                 </View>
-
-                {mode === "today" ? (
-                  <View style={styles.trackFooter}>
-                    <ProgressTrackGlass>
-                      <WaterDayProgressTrack mode={mode} />
-                    </ProgressTrackGlass>
-                  </View>
-                ) : null}
               </>
             )}
           </View>
@@ -237,8 +220,6 @@ const styles = StyleSheet.create({
   },
   immersiveOuter: {
     flex: 1,
-    marginHorizontal: 16,
-    marginBottom: LOG_WATER_VERTICAL_STACK_GAP,
     minHeight: 0,
   },
   immersiveInner: {
@@ -300,26 +281,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 4,
     paddingHorizontal: 16,
-  },
-  trackFooter: {
-    alignSelf: "stretch",
-  },
-  trackGlassOuter: {
-    alignSelf: "stretch",
-    borderRadius: 16,
-    overflow: "hidden",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  trackGlassOuterLight: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(13,40,64,0.22)",
-  },
-  trackGlassWebFallbackLight: {
-    backgroundColor: "rgba(236, 245, 252, 0.5)",
-  },
-  trackGlassWebFallbackDark: {
-    backgroundColor: "rgba(12, 22, 36, 0.5)",
   },
   heroRow: {
     flexDirection: "row",

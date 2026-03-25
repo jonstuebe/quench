@@ -60,7 +60,7 @@ type Props = {
 };
 
 /**
- * Day timeline bar + time labels (no glass wrapper). Used inside `WaterWidget` and `LogWaterPanel`.
+ * Day timeline bar + time labels (no glass wrapper). Used inside `LogWaterPanel` and the home screen.
  */
 export function WaterDayProgressTrack({ mode, style }: Props) {
   const colorScheme = useColorScheme();
