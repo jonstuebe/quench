@@ -24,6 +24,13 @@ const MAX_FETCH_DAYS = 400;
 const DEFAULT_WEIGHT_LB = 160;
 
 let inFlight: Promise<void> | null = null;
+/** A run was skipped because the app wasn't active (cold launch in "unknown"/"inactive", or a
+ * locked background launch). The AppState "active" listener flushes it. */
+let pendingWhileInactive = false;
+
+export function hasPendingStreakRun(): boolean {
+  return pendingWhileInactive;
+}
 let rerun = false;
 
 /**
@@ -53,7 +60,11 @@ export function evaluateStreakNow(): Promise<void> {
 async function runOnce(now: Date) {
   // Defense in depth: UIBackgroundModes can mount JS while the device is locked, when
   // HealthKit reads may come back empty (protected data) and would read as misses.
-  if (AppState.currentState !== "active") return;
+  if (AppState.currentState !== "active") {
+    pendingWhileInactive = true; // run on the next transition to "active"
+    return;
+  }
+  pendingWhileInactive = false;
 
   const today = toDayKey(now);
   const state = normalizeStreakState(streakState$.peek());

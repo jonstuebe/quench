@@ -17,8 +17,6 @@ const MINUTE_MS = 60_000;
  */
 export function useStreakEngine() {
   useEffect(() => {
-    void onClockTick();
-
     let midnightTimer: ReturnType<typeof setTimeout> | undefined;
     /** Re-arm for the next of {local midnight, JUDGE_GRACE_HOUR} (when yesterday becomes final). */
     const scheduleMidnight = () => {
@@ -36,14 +34,20 @@ export function useStreakEngine() {
     };
     scheduleMidnight();
 
-    const minuteTimer = setInterval(() => now$.set(Date.now()), MINUTE_MS);
-
+    // Listen before the initial run so a cold launch can't miss the "active" transition:
+    // either currentState is already "active" below, or the event arrives here.
     const appStateSub = AppState.addEventListener("change", (s) => {
+      // Always evaluate on becoming active; this also flushes a run skipped while inactive
+      // (hasPendingStreakRun), e.g. a cold launch that mounted in "unknown"/"inactive".
       if (s !== "active") return;
       // Timers don't run while suspended: catch up on rollover and re-arm midnight.
       scheduleMidnight();
       void onClockTick();
     });
+
+    void onClockTick();
+
+    const minuteTimer = setInterval(() => now$.set(Date.now()), MINUTE_MS);
 
     const hkSub = subscribeToChanges(HK_WATER, () => {
       void evaluateStreakNow();
