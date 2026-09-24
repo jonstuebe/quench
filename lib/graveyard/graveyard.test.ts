@@ -14,19 +14,25 @@ import {
   longestStreakHolder,
 } from "./graveyard";
 
-const grave = (name: string, hatchedOn: string, lastCountedDay: string, len: number): Grave => ({
+/** A grave; `diedOn` is the missed day (normally the day after `lastCountedDay`). */
+const grave = (
+  name: string,
+  hatchedOn: string,
+  lastCountedDay: string,
+  len: number,
+  diedOn: string,
+): Grave => ({
   id: `${hatchedOn}#${name}`,
   name,
   hatchedOn,
   lastCountedDay,
   streakLength: len,
-  diedOn: lastCountedDay, // not used by these helpers' ordering beyond diedOn below
+  diedOn,
 });
-const died = (g: Grave, diedOn: string): Grave => ({ ...g, diedOn });
 
-const mochi = died(grave("Mochi", "2026-09-02", "2026-09-13", 12), "2026-09-14");
-const bean = died(grave("Bean", "2026-01-05", "2026-01-07", 3), "2026-01-08");
-const tofu = died(grave("Tofu", "2025-12-28", "2026-01-03", 7), "2026-01-04");
+const mochi = grave("Mochi", "2026-09-02", "2026-09-13", 12, "2026-09-14");
+const bean = grave("Bean", "2026-01-05", "2026-01-07", 3, "2026-01-08");
+const tofu = grave("Tofu", "2025-12-28", "2026-01-03", 7, "2026-01-04");
 
 describe("gravesNewestFirst", () => {
   test("puts the most recent death first without mutating the input", () => {
@@ -35,13 +41,13 @@ describe("gravesNewestFirst", () => {
     expect(input.map((g) => g.name)).toEqual(["Tofu", "Bean", "Mochi"]);
   });
   test("keeps later-buried first when two died on the same day", () => {
-    const a = died(grave("A", "2026-03-01", "2026-03-01", 1), "2026-03-02");
-    const b = died(grave("B", "2026-03-01", "2026-03-01", 1), "2026-03-02");
+    const a = grave("A", "2026-03-01", "2026-03-01", 1, "2026-03-02");
+    const b = grave("B", "2026-03-01", "2026-03-01", 1, "2026-03-02");
     expect(gravesNewestFirst([a, b]).map((g) => g.name)).toEqual(["B", "A"]);
   });
   test("handles hundreds of graves", () => {
     const many = Array.from({ length: 500 }, (_, i) =>
-      died(grave(`P${i}`, "2026-01-01", "2026-01-01", 1), `2026-0${1 + (i % 9)}-15`),
+      grave(`P${i}`, "2026-01-01", "2026-01-01", 1, `2026-0${1 + (i % 9)}-15`),
     );
     const sorted = gravesNewestFirst(many);
     expect(sorted).toHaveLength(500);
@@ -73,11 +79,15 @@ describe("longestStreakHolder", () => {
     });
   });
   test("a tie goes to whoever reached it first (the older grave)", () => {
-    const later = died(grave("Pickle", "2026-05-01", "2026-05-12", 12), "2026-05-13");
-    const first = died(grave("Olive", "2026-02-01", "2026-02-12", 12), "2026-02-13");
+    const later = grave("Pickle", "2026-05-01", "2026-05-12", 12, "2026-05-13");
+    const first = grave("Olive", "2026-02-01", "2026-02-12", 12, "2026-02-13");
     expect(longestStreakHolder(12, [first, later], null)?.name).toBe("Olive");
     // Order-agnostic: the list may already be sorted newest first.
     expect(longestStreakHolder(12, [later, first], null)?.name).toBe("Olive");
+  });
+  test("no holder when the record belongs to nobody still on record", () => {
+    const short = grave("Kiwi", "2026-04-01", "2026-04-12", 12, "2026-04-13");
+    expect(longestStreakHolder(20, [short], null)).toBeNull();
   });
   test("the living pet holds it once it has matched the record", () => {
     expect(longestStreakHolder(12, [mochi], { name: "Dumpling", streakLength: 12 })).toEqual({
@@ -134,10 +144,7 @@ describe("graveAccessibilityLabel", () => {
       "Mochi, lived 12 days, September 2 to September 13, 2026",
     );
     expect(
-      graveAccessibilityLabel(
-        died(grave("Bit", "2026-03-08", "2026-03-08", 1), "2026-03-09"),
-        "en-US",
-      ),
+      graveAccessibilityLabel(grave("Bit", "2026-03-08", "2026-03-08", 1, "2026-03-09"), "en-US"),
     ).toBe("Bit, lived 1 day, March 8, 2026");
   });
 });

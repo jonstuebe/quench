@@ -76,7 +76,7 @@ export function formatDayLong(day: DayKey, locale?: string): string {
 }
 
 export function daysLabel(n: number): string {
-  return `${n.toLocaleString("en-US")} ${n === 1 ? "day" : "days"}`;
+  return `${n.toLocaleString()} ${n === 1 ? "day" : "days"}`;
 }
 
 /** One element per grave: "Mochi, lived 12 days, September 2 to September 13, 2026". */
