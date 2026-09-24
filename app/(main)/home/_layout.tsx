@@ -19,6 +19,17 @@ export default function HomeStackLayout() {
           headerTintColor: colorScheme === "light" ? "#ffffff" : colors.text,
         }}
       />
+      <Stack.Screen
+        name="log"
+        options={{
+          title: "Log a drink",
+          presentation: "formSheet",
+          sheetAllowedDetents: [0.5],
+          sheetGrabberVisible: true,
+          headerTransparent: true,
+          contentStyle: { backgroundColor: "transparent" },
+        }}
+      />
     </Stack>
   );
 }
