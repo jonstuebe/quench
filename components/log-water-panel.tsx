@@ -4,6 +4,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { isHealthUnauthorizedError } from "@/lib/health/errors";
 import { saveWaterFlOz } from "@/lib/health/queries";
 import { refreshTodayMetrics } from "@/lib/health/store";
+import { evaluateStreakNow } from "@/lib/streak/engine";
 import { scheduleNextReminder } from "@/lib/notifications";
 import { prefs$ } from "@/lib/prefs";
 import { buildAmountOptions, displayToFlOz, formatVolumeLabel } from "@/lib/volume";
@@ -47,6 +48,7 @@ export function LogWaterPanel() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await saveWaterFlOz(flOz, at);
       await refreshTodayMetrics();
+      void evaluateStreakNow();
       const rm = prefs$.reminderMinutes.get();
       if ((prefs$.remindersEnabled.get() ?? true) && rm != null) {
         await scheduleNextReminder({

@@ -1,7 +1,10 @@
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 
+import { useStreakEngine } from "@/hooks/use-streak-engine";
+
 /** Root native tab bar (system liquid glass on iOS 26). Each tab owns a Stack for its own header. */
 export default function MainTabsLayout() {
+  useStreakEngine();
   return (
     <NativeTabs minimizeBehavior="never">
       <NativeTabs.Trigger name="home">

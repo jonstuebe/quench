@@ -1,6 +1,7 @@
 import { isHealthUnauthorizedError } from "@/lib/health/errors";
 import { deleteWaterSampleByUuid, getLastDeletableWaterSampleForDay } from "@/lib/health/queries";
 import { refreshTodayMetrics } from "@/lib/health/store";
+import { evaluateStreakNow } from "@/lib/streak/engine";
 import * as Haptics from "expo-haptics";
 import { format } from "date-fns";
 import { useCallback, useEffect, useState } from "react";
@@ -51,6 +52,7 @@ export function useWaterUndoLastDrink({
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await deleteWaterSampleByUuid(last.uuid);
       await refreshTodayMetrics();
+      void evaluateStreakNow();
     } catch (e) {
       if (isHealthUnauthorizedError(e)) {
         Alert.alert(
