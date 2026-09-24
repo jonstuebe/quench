@@ -20,15 +20,6 @@ export default function MainLayout() {
         }}
       />
       <Stack.Screen
-        name="insights"
-        options={{
-          title: "Insights",
-          headerLargeTitle: true,
-          headerBackButtonDisplayMode: "minimal",
-          headerShadowVisible: false,
-        }}
-      />
-      <Stack.Screen
         name="settings"
         options={{
           title: "Settings",
@@ -36,7 +27,6 @@ export default function MainLayout() {
           headerShadowVisible: false,
         }}
       />
-      <Stack.Screen name="day/[date]" options={{ headerShown: false }} />
     </Stack>
   );
 }

@@ -17,7 +17,6 @@
 ## Features
 
 - **Daily logging** — Quick entry and a clear picture of today’s intake  
-- **Insights** — Trends and history so you can see patterns, not just numbers  
 - **Apple Health** — Reads and writes water (and related signals like activity and weight where used for goals) via HealthKit on iOS  
 - **Reminders** — Local notifications to nudge you when it helps  
 - **Onboarding** — Guided first-run setup  

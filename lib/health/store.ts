@@ -5,7 +5,7 @@ import { synced } from "@legendapp/state/sync";
 import { HK_APPLE_EXERCISE_TIME, HK_BODY_MASS, HK_WATER } from "@/lib/health/ids";
 import { getWeightLb, sumExerciseMinutesForDay, sumWaterFlOzForDay } from "@/lib/health/queries";
 
-/** Calendar day used by Day screen + shared day metrics */
+/** Calendar day used by shared day metrics */
 export const dayDate$ = observable(new Date());
 
 export const todayWaterFlOz$ = observable(

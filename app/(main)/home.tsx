@@ -64,14 +64,7 @@ export default function HomeScreen() {
         ) : null}
       </Stack.Toolbar>
       <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button
-          icon="clock"
-          onPress={() => router.push("/insights")}
-        />
-        <Stack.Toolbar.Button
-          icon="gearshape"
-          onPress={() => router.push("/settings")}
-        />
+        <Stack.Toolbar.Button icon="gearshape" onPress={() => router.push("/settings")} />
       </Stack.Toolbar>
       <View style={{ flex: 1 }}>
         <WaterHomeShaderBackdrop />
