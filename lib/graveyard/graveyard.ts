@@ -5,10 +5,6 @@
 import { dayKeyToDate, type DayKey } from "@/lib/streak/day";
 import type { Grave } from "@/lib/streak/evaluate";
 
-export type LivingPetSummary = { name: string; streakLength: number };
-export type RecordHolder = { name: string; alive: boolean } | null;
-export type GraveyardStats = { lost: number; totalDays: number };
-
 /** Most recent death first. Same-day deaths keep burial order reversed (later-buried first). */
 export function gravesNewestFirst(graves: readonly Grave[]): Grave[] {
   return graves
@@ -17,31 +13,18 @@ export function gravesNewestFirst(graves: readonly Grave[]): Grave[] {
     .map((x) => x.g);
 }
 
-/** Axolotls lost, and streak days summed across every life (the living pet included). */
-export function graveyardStats(
-  graves: readonly Grave[],
-  pet: LivingPetSummary | null,
-): GraveyardStats {
-  const past = graves.reduce((sum, g) => sum + g.streakLength, 0);
-  return { lost: graves.length, totalDays: past + (pet?.streakLength ?? 0) };
-}
-
-/**
- * Who holds the longest streak. The living pet once it has matched the record; otherwise the
- * grave that reached it first (earliest death), whatever the input order.
- */
-export function longestStreakHolder(
-  longest: number,
-  graves: readonly Grave[],
-  pet: LivingPetSummary | null,
-): RecordHolder {
-  if (longest <= 0) return null;
-  if (pet && pet.streakLength >= longest) return { name: pet.name, alive: true };
-  let g: Grave | undefined;
-  for (const x of graves) {
-    if (x.streakLength === longest && (!g || x.diedOn < g.diedOn)) g = x;
+/** The Graveyard's hero: the grave that lived longest; a tie goes to whoever died first. */
+export function longestLife(graves: readonly Grave[]): Grave | undefined {
+  let best: Grave | undefined;
+  for (const g of graves) {
+    if (
+      !best ||
+      g.streakLength > best.streakLength ||
+      (g.streakLength === best.streakLength && g.diedOn < best.diedOn)
+    )
+      best = g;
   }
-  return g ? { name: g.name, alive: false } : null;
+  return best;
 }
 
 const fmt = (day: DayKey, locale: string | undefined, o: Intl.DateTimeFormatOptions) =>
@@ -91,6 +74,11 @@ export function graveLifespanSpoken(g: Grave, locale?: string): string {
 
 export function graveAccessibilityLabel(g: Grave, locale?: string): string {
   return `${g.name}, lived ${daysLabel(g.streakLength)}, ${graveLifespanSpoken(g, locale)}`;
+}
+
+/** "Tofu, longest life, 23 days. Opens memorial" */
+export function heroAccessibilityLabel(g: Grave): string {
+  return `${g.name}, longest life, ${daysLabel(g.streakLength)}. Opens memorial`;
 }
 
 const EPITAPHS = [

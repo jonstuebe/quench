@@ -18,7 +18,7 @@ import {
 
 export default function GraveDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { graves } = useGraveyard();
+  const graves = useGraveyard();
   const grave = graves.find((g) => g.id === id);
 
   if (!grave) {

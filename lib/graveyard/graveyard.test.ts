@@ -10,10 +10,10 @@ import {
   graveAccessibilityLabel,
   graveLifespan,
   graveLifespanSpoken,
-  graveyardStats,
+  heroAccessibilityLabel,
   gravesNewestFirst,
   lifespanSpoken,
-  longestStreakHolder,
+  longestLife,
 } from "./graveyard";
 
 /** A grave; `diedOn` is the missed day (normally the day after `lastCountedDay`). */
@@ -58,47 +58,21 @@ describe("gravesNewestFirst", () => {
   });
 });
 
-describe("graveyardStats", () => {
-  test("empty graveyard, no pet", () => {
-    expect(graveyardStats([], null)).toEqual({ lost: 0, totalDays: 0 });
+describe("longestLife", () => {
+  test("an empty graveyard has no hero", () => {
+    expect(longestLife([])).toBeUndefined();
   });
-  test("counts lost axolotls and sums days across every life, including the living one", () => {
-    expect(graveyardStats([tofu, bean, mochi], { name: "Dumpling", streakLength: 5 })).toEqual({
-      lost: 3,
-      totalDays: 27,
-    });
+  test("a single grave is the hero", () => {
+    expect(longestLife([bean])).toBe(bean);
   });
-});
-
-describe("longestStreakHolder", () => {
-  test("nobody holds a zero record", () => {
-    expect(longestStreakHolder(0, [], null)).toBeNull();
+  test("the grave that lived the most days", () => {
+    expect(longestLife([tofu, mochi, bean])).toBe(mochi);
   });
-  test("the grave whose streak matches the record", () => {
-    expect(longestStreakHolder(12, [tofu, mochi, bean], null)).toEqual({
-      name: "Mochi",
-      alive: false,
-    });
-  });
-  test("a tie goes to whoever reached it first (the older grave)", () => {
+  test("a tie goes to whoever died first, whatever the input order", () => {
     const later = grave("Pickle", "2026-05-01", "2026-05-12", 12, "2026-05-13");
     const first = grave("Olive", "2026-02-01", "2026-02-12", 12, "2026-02-13");
-    expect(longestStreakHolder(12, [first, later], null)?.name).toBe("Olive");
-    // Order-agnostic: the list may already be sorted newest first.
-    expect(longestStreakHolder(12, [later, first], null)?.name).toBe("Olive");
-  });
-  test("no holder when the record belongs to nobody still on record", () => {
-    const short = grave("Kiwi", "2026-04-01", "2026-04-12", 12, "2026-04-13");
-    expect(longestStreakHolder(20, [short], null)).toBeNull();
-  });
-  test("the living pet holds it once it has matched the record", () => {
-    expect(longestStreakHolder(12, [mochi], { name: "Dumpling", streakLength: 12 })).toEqual({
-      name: "Dumpling",
-      alive: true,
-    });
-    expect(longestStreakHolder(12, [mochi], { name: "Dumpling", streakLength: 11 })?.name).toBe(
-      "Mochi",
-    );
+    expect(longestLife([later, first])).toBe(first);
+    expect(longestLife([first, later])).toBe(first);
   });
 });
 
@@ -162,6 +136,16 @@ describe("graveAccessibilityLabel", () => {
     expect(
       graveAccessibilityLabel(grave("Bit", "2026-03-08", "2026-03-08", 1, "2026-03-09"), "en-US"),
     ).toBe("Bit, lived 1 day, March 8 to March 9, 2026");
+  });
+});
+
+describe("heroAccessibilityLabel", () => {
+  test("reads the hero as one button", () => {
+    expect(heroAccessibilityLabel(mochi)).toBe("Mochi, longest life, 12 days. Opens memorial");
+  });
+  test("a one-day life is singular", () => {
+    const pip = grave("Pip", "2026-03-01", "2026-03-01", 1, "2026-03-02");
+    expect(heroAccessibilityLabel(pip)).toBe("Pip, longest life, 1 day. Opens memorial");
   });
 });
 
