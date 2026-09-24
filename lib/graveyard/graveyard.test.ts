@@ -8,6 +8,8 @@ import {
   formatDayLong,
   formatLifespan,
   graveAccessibilityLabel,
+  graveLifespan,
+  graveLifespanSpoken,
   graveyardStats,
   gravesNewestFirst,
   lifespanSpoken,
@@ -138,14 +140,28 @@ describe("daysLabel", () => {
   });
 });
 
+describe("graveLifespan (hatch day to the day it died)", () => {
+  test("runs to the death day, not the last full day", () => {
+    expect(graveLifespan(mochi, "en-US")).toBe("Sep 2 – Sep 14, 2026");
+    expect(graveLifespanSpoken(mochi, "en-US")).toBe("September 2 to September 14, 2026");
+  });
+  test("a 1-day life spans hatch day and the next day", () => {
+    const bit = grave("Bit", "2026-03-08", "2026-03-08", 1, "2026-03-09");
+    expect(graveLifespan(bit, "en-US")).toBe("Mar 8 – Mar 9, 2026");
+  });
+  test("a death just after New Year shows both years", () => {
+    expect(graveLifespan(tofu, "en-US")).toBe("Dec 28, 2025 – Jan 4, 2026");
+  });
+});
+
 describe("graveAccessibilityLabel", () => {
   test("reads a grave as one sentence", () => {
     expect(graveAccessibilityLabel(mochi, "en-US")).toBe(
-      "Mochi, lived 12 days, September 2 to September 13, 2026",
+      "Mochi, lived 12 days, September 2 to September 14, 2026",
     );
     expect(
       graveAccessibilityLabel(grave("Bit", "2026-03-08", "2026-03-08", 1, "2026-03-09"), "en-US"),
-    ).toBe("Bit, lived 1 day, March 8, 2026");
+    ).toBe("Bit, lived 1 day, March 8 to March 9, 2026");
   });
 });
 

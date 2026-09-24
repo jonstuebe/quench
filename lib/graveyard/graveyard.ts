@@ -79,9 +79,18 @@ export function daysLabel(n: number): string {
   return `${n.toLocaleString()} ${n === 1 ? "day" : "days"}`;
 }
 
-/** One element per grave: "Mochi, lived 12 days, September 2 to September 13, 2026". */
+/** One element per grave: "Mochi, lived 12 days, September 2 to September 14, 2026". */
+/** A grave's lifespan for display: hatch day → the day it died. */
+export function graveLifespan(g: Grave, locale?: string): string {
+  return formatLifespan(g.hatchedOn, g.diedOn, locale);
+}
+
+export function graveLifespanSpoken(g: Grave, locale?: string): string {
+  return lifespanSpoken(g.hatchedOn, g.diedOn, locale);
+}
+
 export function graveAccessibilityLabel(g: Grave, locale?: string): string {
-  return `${g.name}, lived ${daysLabel(g.streakLength)}, ${lifespanSpoken(g.hatchedOn, g.lastCountedDay, locale)}`;
+  return `${g.name}, lived ${daysLabel(g.streakLength)}, ${graveLifespanSpoken(g, locale)}`;
 }
 
 const EPITAPHS = [

@@ -12,8 +12,8 @@ import {
   daysLabel,
   epitaphFor,
   formatDayLong,
-  formatLifespan,
-  lifespanSpoken,
+  graveLifespan,
+  graveLifespanSpoken,
 } from "@/lib/graveyard/graveyard";
 
 export default function GraveDetailScreen() {
@@ -34,8 +34,7 @@ export default function GraveDetailScreen() {
 
   const rows: { symbol: SymbolViewProps["name"]; label: string; value: string }[] = [
     { symbol: "sparkles", label: "Hatched", value: formatDayLong(grave.hatchedOn) },
-    { symbol: "drop.fill", label: "Last full day", value: formatDayLong(grave.lastCountedDay) },
-    { symbol: "moon.zzz.fill", label: "Missed on", value: formatDayLong(grave.diedOn) },
+    { symbol: "moon.zzz.fill", label: "Died", value: formatDayLong(grave.diedOn) },
     { symbol: "flame.fill", label: "Days lived", value: daysLabel(grave.streakLength) },
   ];
 
@@ -50,7 +49,7 @@ export default function GraveDetailScreen() {
         <View
           style={{ alignItems: "center", gap: 4 }}
           accessible
-          accessibilityLabel={`${grave.name}, lived ${daysLabel(grave.streakLength)}, ${lifespanSpoken(grave.hatchedOn, grave.lastCountedDay)}. ${epitaphFor(grave.id)}`}
+          accessibilityLabel={`${grave.name}, lived ${daysLabel(grave.streakLength)}, ${graveLifespanSpoken(grave)}. ${epitaphFor(grave.id)}`}
         >
           <FloatingGhost streakLength={grave.streakLength} size={220} />
           <Text
@@ -65,7 +64,7 @@ export default function GraveDetailScreen() {
             {grave.name}
           </Text>
           <Text style={{ fontSize: 16, color: PlatformColor("secondaryLabel") }}>
-            {formatLifespan(grave.hatchedOn, grave.lastCountedDay)}
+            {graveLifespan(grave)}
           </Text>
           <Text
             style={{

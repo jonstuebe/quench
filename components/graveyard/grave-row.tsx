@@ -8,7 +8,7 @@ import { Fonts } from "@/constants/theme";
 import {
   daysLabel,
   epitaphFor,
-  formatLifespan,
+  graveLifespan,
   graveAccessibilityLabel,
 } from "@/lib/graveyard/graveyard";
 import type { Grave } from "@/lib/streak/evaluate";
@@ -73,7 +73,7 @@ export const GraveRow = memo(function GraveRow({ grave, onPress }: Props) {
               style={{ fontSize: 14, color: PlatformColor("secondaryLabel") }}
               maxFontSizeMultiplier={1.8}
             >
-              {formatLifespan(grave.hatchedOn, grave.lastCountedDay)}
+              {graveLifespan(grave)}
             </Text>
             <Text
               numberOfLines={2}
