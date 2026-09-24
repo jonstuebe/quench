@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { moodVisuals, petAccessibilityLabel } from "./visuals";
+import { ghostVisuals, moodVisuals, petAccessibilityLabel } from "./visuals";
 
 describe("moodVisuals", () => {
   const decline = ["happy", "content", "thirsty", "parched"] as const;
@@ -52,5 +52,35 @@ describe("petAccessibilityLabel", () => {
     expect(petAccessibilityLabel(null, "egg")).toBe(
       "An axolotl egg. Meet your goal today to hatch it",
     );
+  });
+});
+
+describe("ghostVisuals", () => {
+  test("a ghost rests: eyes closed, faint smile, no motion or effects", () => {
+    const g = ghostVisuals(7);
+    expect(g.eyes).toBe("closed");
+    expect(g.tempo).toBe(0);
+    expect(g.smile).toBeGreaterThan(0);
+    expect(g.smile).toBeLessThan(0.5);
+    expect(g.sparkles).toBe(false);
+    expect(g.sweat).toBe(false);
+    expect(g.urgency).toBe(0);
+  });
+  test("paler than even a parched pet, and translucent", () => {
+    const g = ghostVisuals(7);
+    expect(g.saturation).toBeLessThan(moodVisuals("parched")!.saturation);
+    expect(g.opacity).toBeGreaterThan(0.5);
+    expect(g.opacity).toBeLessThan(1);
+  });
+  test("the halo glows brighter for longer lives, capped at a month", () => {
+    expect(ghostVisuals(1).halo).toBe(0.35);
+    expect(ghostVisuals(10).halo).toBeGreaterThan(0.35);
+    expect(ghostVisuals(10).halo).toBeLessThan(ghostVisuals(20).halo);
+    expect(ghostVisuals(30).halo).toBe(1);
+    expect(ghostVisuals(400).halo).toBe(1);
+  });
+  test("a nonsensical length still yields the dimmest halo", () => {
+    expect(ghostVisuals(0).halo).toBe(0.35);
+    expect(ghostVisuals(Number.NaN).halo).toBe(0.35);
   });
 });

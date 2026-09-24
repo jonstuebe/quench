@@ -5,7 +5,7 @@
 import type { PetMood } from "@/lib/streak/view";
 import type { Mood } from "@/lib/streak/mood";
 
-export type EyeStyle = "open" | "joy" | "sad" | "worried";
+export type EyeStyle = "open" | "joy" | "sad" | "worried" | "closed";
 
 export type MoodVisuals = {
   /** 0 = gills fanned up and perky, 1 = fully drooped. */
@@ -111,4 +111,31 @@ const MOOD_WORDS: Record<Mood, string> = {
 export function petAccessibilityLabel(name: string | null, mood: PetMood): string {
   if (mood === "egg") return "An axolotl egg. Meet your goal today to hatch it";
   return `${name ?? "Your"} the axolotl, ${MOOD_WORDS[mood]}`;
+}
+
+export type GhostVisuals = MoodVisuals & {
+  /** Whole-ghost opacity 0–1 (translucent, but legible). */
+  opacity: number;
+  /** Halo glow strength 0–1; brighter for longer lives. */
+  halo: number;
+};
+
+/** Memorial rendition of a past pet: peaceful, faded, still. */
+export function ghostVisuals(streakLength: number): GhostVisuals {
+  const days = Number.isFinite(streakLength) ? Math.max(1, streakLength) : 1;
+  // 1 day → 0.35, linear to full glow at 30 days.
+  const halo = Math.min(1, 0.35 + ((days - 1) / 29) * 0.65);
+  return {
+    gillDroop: 0.3,
+    saturation: 0.15,
+    tempo: 0,
+    smile: 0.25,
+    eyes: "closed",
+    blush: 0.2,
+    sparkles: false,
+    sweat: false,
+    urgency: 0,
+    opacity: 0.82,
+    halo,
+  };
 }
