@@ -13,14 +13,25 @@ export function gravesNewestFirst(graves: readonly Grave[]): Grave[] {
     .map((x) => x.g);
 }
 
-/** The Graveyard's hero: the grave that lived longest; a tie goes to whoever died first. */
+/** Burial order from the grave id's `#graveCount` suffix (set at hatch); Infinity if absent. */
+function burialIndex(g: Grave): number {
+  const m = /#(\d+)$/.exec(g.id);
+  return m ? Number(m[1]) : Infinity;
+}
+
+/**
+ * The Graveyard's hero: the grave that lived longest. Ties go to whoever died first, then to
+ * the earlier burial, so the pick never depends on input order.
+ */
 export function longestLife(graves: readonly Grave[]): Grave | undefined {
   let best: Grave | undefined;
   for (const g of graves) {
     if (
       !best ||
       g.streakLength > best.streakLength ||
-      (g.streakLength === best.streakLength && g.diedOn < best.diedOn)
+      (g.streakLength === best.streakLength &&
+        (g.diedOn < best.diedOn ||
+          (g.diedOn === best.diedOn && burialIndex(g) < burialIndex(best))))
     )
       best = g;
   }

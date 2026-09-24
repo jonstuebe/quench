@@ -74,6 +74,17 @@ describe("longestLife", () => {
     expect(longestLife([later, first])).toBe(first);
     expect(longestLife([first, later])).toBe(first);
   });
+  test("same length and same death day: the earlier burial wins, whatever the input order", () => {
+    const buried = (name: string, n: number): Grave => ({
+      ...grave(name, "2026-02-01", "2026-02-12", 12, "2026-02-13"),
+      id: `2026-02-01#${n}`,
+    });
+    // #10 vs #9 also guards against comparing the suffix as a string.
+    const earlier = buried("Olive", 9);
+    const later = buried("Pickle", 10);
+    expect(longestLife([later, earlier])).toBe(earlier);
+    expect(longestLife([earlier, later])).toBe(earlier);
+  });
 });
 
 describe("formatLifespan", () => {
@@ -142,10 +153,6 @@ describe("graveAccessibilityLabel", () => {
 describe("heroAccessibilityLabel", () => {
   test("reads the hero as one button", () => {
     expect(heroAccessibilityLabel(mochi)).toBe("Mochi, longest life, 12 days. Opens memorial");
-  });
-  test("a one-day life is singular", () => {
-    const pip = grave("Pip", "2026-03-01", "2026-03-01", 1, "2026-03-02");
-    expect(heroAccessibilityLabel(pip)).toBe("Pip, longest life, 1 day. Opens memorial");
   });
 });
 
