@@ -2,6 +2,9 @@ import { describe, expect, test } from "bun:test";
 
 import { daysToFetch, evaluateStreak, initialStreakState, type StreakState } from "./evaluate";
 import { AXOLOTL_NAMES } from "./names";
+import { dayKeyToDate } from "./day";
+
+const noonOf = (day: string) => new Date(dayKeyToDate(day).setHours(12));
 
 const GOAL = 64;
 
@@ -12,7 +15,7 @@ function run(
   goalByDay: Record<string, number> = {},
   fallbackGoalFlOz = GOAL,
 ) {
-  return evaluateStreak(state, { today, intakeByDay, goalByDay, fallbackGoalFlOz });
+  return evaluateStreak(state, { now: noonOf(today), intakeByDay, goalByDay, fallbackGoalFlOz });
 }
 
 /** Start tracking on `day` with nothing drunk yet. */
@@ -321,5 +324,114 @@ describe("daysToFetch", () => {
       from: "2026-09-01",
       to: "2026-09-03",
     });
+  });
+});
+
+describe("judge grace period (a day is final at 04:00 the next morning)", () => {
+  const runAt = (state: StreakState, now: Date, intakeByDay: Record<string, number>) =>
+    evaluateStreak(state, { now, intakeByDay, goalByDay: {}, fallbackGoalFlOz: GOAL });
+  /** Pet counted on 09-01 and (as today) on 09-02. */
+  const twoDayPet = () =>
+    run(run(installedOn("2026-09-01"), "2026-09-01", { "2026-09-01": 70 }), "2026-09-02", {
+      "2026-09-01": 70,
+      "2026-09-02": 70,
+    });
+
+  test("yesterday's intake arriving at 00:05 is still counted, streak intact", () => {
+    let s = runAt(twoDayPet(), new Date(2026, 8, 3, 0, 0, 1), {
+      "2026-09-01": 70,
+      "2026-09-02": 30,
+    });
+    expect(s.graveyard).toEqual([]);
+    expect(s.pet).toMatchObject({ lastCountedDay: "2026-09-01", streakLength: 1 });
+    s = runAt(s, new Date(2026, 8, 3, 0, 5), { "2026-09-01": 70, "2026-09-02": 70 });
+    expect(s.graveyard).toEqual([]);
+    expect(s.pet).toMatchObject({ lastCountedDay: "2026-09-02", streakLength: 2 });
+  });
+
+  test("a sample backfilled at 03:30 the next day is counted", () => {
+    let s = runAt(twoDayPet(), new Date(2026, 8, 3, 0, 1), { "2026-09-01": 70, "2026-09-02": 30 });
+    s = runAt(s, new Date(2026, 8, 3, 3, 30), { "2026-09-01": 70, "2026-09-02": 64 });
+    expect(s.pet).toMatchObject({ streakLength: 2 });
+    expect(s.graveyard).toEqual([]);
+  });
+
+  test("at 03:59 with yesterday unmet the pet is still alive and yesterday provisional", () => {
+    const s = runAt(twoDayPet(), new Date(2026, 8, 3, 3, 59), {
+      "2026-09-01": 70,
+      "2026-09-02": 30,
+    });
+    expect(s.pet).toMatchObject({ lastCountedDay: "2026-09-01", streakLength: 1 });
+    expect(s.graveyard).toEqual([]);
+    expect(s.judgedThrough).toBe("2026-09-01");
+  });
+
+  test("at 04:00 with yesterday unmet the pet dies with diedOn = yesterday", () => {
+    const s = runAt(twoDayPet(), new Date(2026, 8, 3, 4, 0), {
+      "2026-09-01": 70,
+      "2026-09-02": 30,
+    });
+    expect(s.pet).toBeNull();
+    expect(s.graveyard).toHaveLength(1);
+    expect(s.graveyard[0]).toMatchObject({ diedOn: "2026-09-02", streakLength: 1 });
+    expect(s.judgedThrough).toBe("2026-09-02");
+  });
+
+  test("opened for the first time at 09:00 after a missed yesterday -> dies", () => {
+    const s = runAt(
+      run(installedOn("2026-09-01"), "2026-09-01", { "2026-09-01": 70 }),
+      new Date(2026, 8, 3, 9, 0),
+      {
+        "2026-09-01": 70,
+      },
+    );
+    expect(s.pet).toBeNull();
+    expect(s.graveyard[0]).toMatchObject({ diedOn: "2026-09-02", streakLength: 1 });
+  });
+
+  test("a met today does not extend past a provisional unmet yesterday", () => {
+    let s = runAt(twoDayPet(), new Date(2026, 8, 3, 2, 0), {
+      "2026-09-01": 70,
+      "2026-09-02": 30,
+      "2026-09-03": 70,
+    });
+    expect(s.pet).toMatchObject({ lastCountedDay: "2026-09-01", streakLength: 1 });
+    s = runAt(s, new Date(2026, 8, 3, 2, 30), {
+      "2026-09-01": 70,
+      "2026-09-02": 70,
+      "2026-09-03": 70,
+    });
+    expect(s.pet).toMatchObject({ lastCountedDay: "2026-09-03", streakLength: 3 });
+  });
+
+  test("spring-forward night: 03:59 still provisional, 04:00 final", () => {
+    // Clocks jump 02:00 -> 03:00 on 2026-03-08, judging 2026-03-07.
+    const base = run(installedOn("2026-03-06"), "2026-03-06", { "2026-03-06": 70 });
+    const intake = { "2026-03-06": 70, "2026-03-07": 10 };
+    expect(runAt(base, new Date(2026, 2, 8, 3, 59), intake).pet).toMatchObject({ streakLength: 1 });
+    const dead = runAt(base, new Date(2026, 2, 8, 4, 0), intake);
+    expect(dead.pet).toBeNull();
+    expect(dead.graveyard[0]).toMatchObject({ diedOn: "2026-03-07" });
+  });
+
+  test("fall-back night: 03:59 still provisional, 04:00 final", () => {
+    // Clocks repeat 01:00-02:00 on 2026-11-01, judging 2026-10-31.
+    const base = run(installedOn("2026-10-30"), "2026-10-30", { "2026-10-30": 70 });
+    const intake = { "2026-10-30": 70, "2026-10-31": 10 };
+    expect(runAt(base, new Date(2026, 10, 1, 3, 59), intake).pet).toMatchObject({
+      streakLength: 1,
+    });
+    const dead = runAt(base, new Date(2026, 10, 1, 4, 0), intake);
+    expect(dead.pet).toBeNull();
+    expect(dead.graveyard[0]).toMatchObject({ diedOn: "2026-10-31" });
+  });
+
+  test("idempotent around the grace boundary", () => {
+    const intake = { "2026-09-01": 70, "2026-09-02": 30 };
+    const before = runAt(twoDayPet(), new Date(2026, 8, 3, 3, 59), intake);
+    expect(runAt(before, new Date(2026, 8, 3, 3, 59), intake)).toEqual(before);
+    const after = runAt(before, new Date(2026, 8, 3, 4, 0), intake);
+    expect(after).toEqual(runAt(twoDayPet(), new Date(2026, 8, 3, 4, 0), intake));
+    expect(runAt(after, new Date(2026, 8, 3, 4, 0), intake)).toEqual(after);
   });
 });

@@ -2,6 +2,9 @@ import { describe, expect, test } from "bun:test";
 
 import { evaluateStreak, initialStreakState } from "./evaluate";
 import { derivePetView } from "./view";
+import { dayKeyToDate } from "./day";
+
+const noonOf = (day: string) => new Date(dayKeyToDate(day).setHours(12));
 
 const wake = { hour: 7, minute: 0 };
 const bed = { hour: 22, minute: 0 };
@@ -9,12 +12,17 @@ const GOAL = 80;
 
 function stateAfter(today: string, intakeByDay: Record<string, number>) {
   const installed = evaluateStreak(initialStreakState, {
-    today: "2026-09-01",
+    now: noonOf("2026-09-01"),
     intakeByDay: {},
     goalByDay: {},
     fallbackGoalFlOz: GOAL,
   });
-  return evaluateStreak(installed, { today, intakeByDay, goalByDay: {}, fallbackGoalFlOz: GOAL });
+  return evaluateStreak(installed, {
+    now: noonOf(today),
+    intakeByDay,
+    goalByDay: {},
+    fallbackGoalFlOz: GOAL,
+  });
 }
 
 describe("derivePetView", () => {
