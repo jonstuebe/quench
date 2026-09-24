@@ -6,7 +6,7 @@ describe("healthAccessLabel", () => {
   test("maps HealthKit water sharing status to a short label", () => {
     expect(healthAccessLabel(0)).toBe("Not set up");
     expect(healthAccessLabel(1)).toBe("Off");
-    expect(healthAccessLabel(2)).toBe("Connected");
+    expect(healthAccessLabel(2)).toBe("Saving to Health");
   });
 });
 

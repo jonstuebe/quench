@@ -3,7 +3,7 @@ import { PET_NAME_MAX_LENGTH, type PetNameResult } from "@/lib/streak/rename";
 
 /** HealthKit `AuthorizationStatus` for writing water: 0 not determined, 1 denied, 2 authorized. */
 export function healthAccessLabel(status: 0 | 1 | 2): string {
-  if (status === 2) return "Connected";
+  if (status === 2) return "Saving to Health";
   if (status === 1) return "Off";
   return "Not set up";
 }
