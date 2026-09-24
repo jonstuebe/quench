@@ -11,17 +11,10 @@ import {
 } from "react-native";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import {
-  useWaterShaderUniforms,
-  type WaterWidgetMode,
-} from "@/hooks/use-water-shader-uniforms";
+import { useWaterShaderUniforms } from "@/hooks/use-water-shader-uniforms";
 import { useWaterUndoLastDrink } from "@/hooks/use-water-undo-last-drink";
 import { prefs$ } from "@/lib/prefs";
-import {
-  flOzToDisplay,
-  formatDisplayVolumeValue,
-  formatVolumeLabel,
-} from "@/lib/volume";
+import { flOzToDisplay, formatDisplayVolumeValue, formatVolumeLabel } from "@/lib/volume";
 import { useValue } from "@legendapp/state/react";
 
 import { glassLabelOnBrightLight } from "@/constants/theme";
@@ -30,7 +23,6 @@ const ON_GRADIENT = "#ffffff";
 const ON_GRADIENT_MUTED = "rgba(255,255,255,0.78)";
 
 type UseWaterWidgetModelProps = {
-  mode: WaterWidgetMode;
   enableUndo?: boolean;
 };
 
@@ -87,10 +79,7 @@ function UndoLastDrinkButton({
 
 export type WaterWidgetModel = ReturnType<typeof useWaterWidgetModel>;
 
-export function useWaterWidgetModel({
-  mode,
-  enableUndo = true,
-}: UseWaterWidgetModelProps) {
+export function useWaterWidgetModel({ enableUndo = true }: UseWaterWidgetModelProps) {
   const colorScheme = useColorScheme();
   const {
     water,
@@ -101,9 +90,8 @@ export function useWaterWidgetModel({
     colorDeep,
     colorAir,
     loading,
-  } = useWaterShaderUniforms(mode);
+  } = useWaterShaderUniforms();
   const { canUndo: canUndoDeletable, onUndo } = useWaterUndoLastDrink({
-    mode,
     water,
     loading,
     enabled: enableUndo,
@@ -190,9 +178,7 @@ export function WaterWidgetForeground({
           {water > 0 && !loading && canUndoDeletable ? (
             <UndoLastDrinkButton
               onPress={onUndo}
-              iconTintColor={
-                colorScheme === "light" ? glassLabelOnBrightLight : ON_GRADIENT
-              }
+              iconTintColor={colorScheme === "light" ? glassLabelOnBrightLight : ON_GRADIENT}
               outerStyle={
                 colorScheme === "light"
                   ? {

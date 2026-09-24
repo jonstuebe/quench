@@ -3,21 +3,12 @@ import { Colors, glassLabelOnBrightLight } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { isHealthUnauthorizedError } from "@/lib/health/errors";
 import { saveWaterFlOz } from "@/lib/health/queries";
-import {
-  dayDate$,
-  refreshDayMetrics,
-  refreshTodayMetrics,
-} from "@/lib/health/store";
+import { refreshTodayMetrics } from "@/lib/health/store";
 import { scheduleNextReminder } from "@/lib/notifications";
 import { prefs$ } from "@/lib/prefs";
-import {
-  buildAmountOptions,
-  displayToFlOz,
-  formatVolumeLabel,
-} from "@/lib/volume";
+import { buildAmountOptions, displayToFlOz, formatVolumeLabel } from "@/lib/volume";
 import { Host, Picker, Text as SText } from "@expo/ui/swift-ui";
 import { pickerStyle, tag } from "@expo/ui/swift-ui/modifiers";
-import { parseISO, startOfDay } from "date-fns";
 import { GlassView } from "expo-glass-effect";
 import * as Haptics from "expo-haptics";
 import { useEffect, useMemo, useState } from "react";
@@ -26,32 +17,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useValue } from "@legendapp/state/react";
 
-function sampleDateForLog(dateStr: string | undefined): Date {
-  const now = new Date();
-  if (!dateStr) return now;
-  const d = parseISO(dateStr);
-  if (Number.isNaN(d.getTime())) return now;
-  const t = new Date(d);
-  t.setHours(
-    now.getHours(),
-    now.getMinutes(),
-    now.getSeconds(),
-    now.getMilliseconds(),
-  );
-  return t;
-}
-
-type Props = {
-  dateParam?: string;
-};
-
 /** Matches `WaterWidget` card `marginHorizontal` so the column aligns with the progress card. */
 const COLUMN_MARGIN_H = 16;
 
 /** Space between stacked log controls; `WaterWidget` bottom inset matches this above the panel. */
 export const LOG_WATER_VERTICAL_STACK_GAP = 4;
 
-export function LogWaterPanel({ dateParam }: Props) {
+export function LogWaterPanel() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
@@ -70,15 +42,11 @@ export function LogWaterPanel({ dateParam }: Props) {
 
   async function onAdd() {
     const flOz = displayToFlOz(displayVal, unit);
-    const at = sampleDateForLog(dateParam);
+    const at = new Date();
     try {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await saveWaterFlOz(flOz, at);
       await refreshTodayMetrics();
-      if (dateParam) {
-        dayDate$.set(startOfDay(parseISO(dateParam)));
-        await refreshDayMetrics();
-      }
       const rm = prefs$.reminderMinutes.get();
       if ((prefs$.remindersEnabled.get() ?? true) && rm != null) {
         await scheduleNextReminder({
@@ -138,9 +106,7 @@ export function LogWaterPanel({ dateParam }: Props) {
             >
               <Picker
                 selection={idx}
-                onSelectionChange={(s) =>
-                  setIdx(typeof s === "number" ? s : Number(s))
-                }
+                onSelectionChange={(s) => setIdx(typeof s === "number" ? s : Number(s))}
                 modifiers={[pickerStyle("wheel")]}
               >
                 {options.map((opt, i) => (
@@ -178,10 +144,7 @@ export function LogWaterPanel({ dateParam }: Props) {
               style={[
                 { fontSize: 17, fontWeight: "600" },
                 {
-                  color:
-                    colorScheme === "light"
-                      ? glassLabelOnBrightLight
-                      : colors.tint,
+                  color: colorScheme === "light" ? glassLabelOnBrightLight : colors.tint,
                 },
               ]}
             >

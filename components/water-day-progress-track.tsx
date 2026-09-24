@@ -1,20 +1,10 @@
 import { addDays, format, setHours, setMinutes, startOfDay } from "date-fns";
 import { useEffect, useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from "react-native";
+import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 
 import { glassLabelOnBrightLight } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import {
-  type WaterWidgetMode,
-  useWaterShaderUniforms,
-} from "@/hooks/use-water-shader-uniforms";
-import { dayDate$ } from "@/lib/health/store";
+import { useWaterShaderUniforms } from "@/hooks/use-water-shader-uniforms";
 import { prefs$ } from "@/lib/prefs";
 import type { TimeParts } from "@/lib/types";
 import { useValue } from "@legendapp/state/react";
@@ -48,33 +38,22 @@ function segmentEndTimeLabels(
 }
 
 type Props = {
-  mode: WaterWidgetMode;
   /** Outer padding matching the old `ProgressTrackGlass` inset. */
   style?: StyleProp<ViewStyle>;
   showCurrentTimeMarker?: boolean;
 };
 
 /**
- * Day timeline bar + time labels (no glass wrapper). Used inside `LogWaterPanel` and the home screen.
+ * Day timeline bar + time labels (no glass wrapper). Used on the home screen for today.
  */
-export function WaterDayProgressTrack({
-  mode,
-  style,
-  showCurrentTimeMarker = false,
-}: Props) {
+export function WaterDayProgressTrack({ style, showCurrentTimeMarker = false }: Props) {
   const colorScheme = useColorScheme();
-  const { water, goalFlOz, loading } = useWaterShaderUniforms(mode);
+  const { water, goalFlOz, loading } = useWaterShaderUniforms();
   const wakeUp = useValue(prefs$.wakeUp);
   const bedtime = useValue(prefs$.bedtime);
-  const dayDate = useValue(dayDate$);
 
-  const labelDay = mode === "today" ? new Date() : dayDate;
-  const segmentTimes = segmentEndTimeLabels(
-    labelDay,
-    DAY_SEGMENTS,
-    wakeUp,
-    bedtime,
-  );
+  const labelDay = new Date();
+  const segmentTimes = segmentEndTimeLabels(labelDay, DAY_SEGMENTS, wakeUp, bedtime);
   const labelDayKey = format(labelDay, "yyyy-MM-dd");
 
   const pct = goalFlOz > 0 ? Math.round((water / goalFlOz) * 100) : 0;
@@ -82,11 +61,11 @@ export function WaterDayProgressTrack({
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    if (!showCurrentTimeMarker || mode !== "today") return;
+    if (!showCurrentTimeMarker) return;
     const tick = () => setNow(new Date());
     const interval = setInterval(tick, 60_000);
     return () => clearInterval(interval);
-  }, [mode, showCurrentTimeMarker]);
+  }, [showCurrentTimeMarker]);
 
   const start = startOfDay(labelDay);
   const wakeAt = setMinutes(setHours(start, wakeUp.hour), wakeUp.minute);
@@ -95,9 +74,8 @@ export function WaterDayProgressTrack({
     bedAt = addDays(bedAt, 1);
   }
   const spanMs = Math.max(1, bedAt.getTime() - wakeAt.getTime());
-  const markerNow = mode === "today" ? now : labelDay;
-  const markerFractionRaw =
-    (markerNow.getTime() - wakeAt.getTime()) / spanMs;
+  const markerNow = now;
+  const markerFractionRaw = (markerNow.getTime() - wakeAt.getTime()) / spanMs;
   const markerFraction = Math.max(0, Math.min(1, markerFractionRaw));
   const markerLeftPct = markerFraction * 100;
 
@@ -174,7 +152,7 @@ export function WaterDayProgressTrack({
               </View>
             ))}
           </View>
-          {showCurrentTimeMarker && mode === "today" ? (
+          {showCurrentTimeMarker ? (
             <View
               pointerEvents="none"
               style={{

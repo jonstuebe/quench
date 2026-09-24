@@ -12,7 +12,7 @@ import { useWaterUndoLastDrink } from "@/hooks/use-water-undo-last-drink";
 import { GlassView } from "expo-glass-effect";
 
 function WaterWidgetProgressFooter() {
-  const { loading } = useWaterShaderUniforms("today");
+  const { loading } = useWaterShaderUniforms();
   if (loading) return null;
   return (
     <View style={{ alignSelf: "stretch" }}>
@@ -26,7 +26,7 @@ function WaterWidgetProgressFooter() {
           paddingHorizontal: 12,
         }}
       >
-        <WaterDayProgressTrack mode="today" showCurrentTimeMarker />
+        <WaterDayProgressTrack showCurrentTimeMarker />
       </GlassView>
     </View>
   );
@@ -34,7 +34,7 @@ function WaterWidgetProgressFooter() {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { water, loading, goalFlOz } = useWaterShaderUniforms("today");
+  const { water, loading, goalFlOz } = useWaterShaderUniforms();
   const prevWaterRef = useRef<number | null>(null);
   const [goalConfettiRun, setGoalConfettiRun] = useState(0);
 
@@ -50,7 +50,6 @@ export default function HomeScreen() {
   }, [water, goalFlOz, loading]);
 
   const { canUndo, onUndo } = useWaterUndoLastDrink({
-    mode: "today",
     water,
     loading,
   });
@@ -76,7 +75,7 @@ export default function HomeScreen() {
             marginBottom: 4,
           }}
         >
-          <WaterWidgetImmersive mode="today" />
+          <WaterWidgetImmersive />
           <WaterWidgetProgressFooter />
         </View>
         <LogWaterPanel />

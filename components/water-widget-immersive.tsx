@@ -1,15 +1,9 @@
 import { View } from "react-native";
 
-import { type WaterWidgetMode } from "@/hooks/use-water-shader-uniforms";
-
 import { WaterWidgetForeground, useWaterWidgetModel } from "./water-widget";
 
-type Props = {
-  mode: WaterWidgetMode;
-};
-
-export function WaterWidgetImmersive({ mode }: Props) {
-  const model = useWaterWidgetModel({ mode, enableUndo: false });
+export function WaterWidgetImmersive() {
+  const model = useWaterWidgetModel({ enableUndo: false });
 
   return (
     <View
