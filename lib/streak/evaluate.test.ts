@@ -433,6 +433,22 @@ describe("judge grace period (a day is final at 04:00 the next morning)", () => 
     expect(dead.graveyard[0]).toMatchObject({ diedOn: "2026-10-31" });
   });
 
+  test("at 04:00, unmet yesterday + met today -> one grave, new pet hatched today, stable on re-run", () => {
+    const intake = { "2026-09-01": 70, "2026-09-02": 30, "2026-09-03": 70 };
+    const s = runAt(twoDayPet(), new Date(2026, 8, 3, 4, 0), intake);
+    expect(s.graveyard).toHaveLength(1);
+    expect(s.graveyard[0]).toMatchObject({ diedOn: "2026-09-02", streakLength: 1 });
+    expect(s.pet).toMatchObject({
+      hatchedOn: "2026-09-03",
+      lastCountedDay: "2026-09-03",
+      streakLength: 1,
+    });
+    const again = runAt(s, new Date(2026, 8, 3, 4, 1), intake);
+    expect(again).toEqual(s);
+    expect(again.pet!.id).toBe(s.pet!.id);
+    expect(again.pet!.name).toBe(s.pet!.name);
+  });
+
   test("idempotent around the grace boundary", () => {
     const intake = { "2026-09-01": 70, "2026-09-02": 30 };
     const before = runAt(twoDayPet(), new Date(2026, 8, 3, 3, 59), intake);
