@@ -1,166 +1,304 @@
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { scheduleNextReminder, setupNotifications } from "@/lib/notifications";
-import { prefs$ } from "@/lib/prefs";
-import type { VolumeDisplayUnit } from "@/lib/types";
-import { formatVolumeLabel } from "@/lib/volume";
-import { DatePicker, Divider, Host, Picker, Text as SText, VStack } from "@expo/ui/swift-ui";
-import { controlSize, pickerStyle, tag } from "@expo/ui/swift-ui/modifiers";
-import { useCallback, useMemo } from "react";
-import { Link } from "expo-router";
-import { SymbolView } from "expo-symbols";
-import { PlatformColor, Pressable, ScrollView, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
+import {
+  Button,
+  DatePicker,
+  Form,
+  Host,
+  LabeledContent,
+  Picker,
+  Section,
+  Text,
+  Toggle,
+} from "@expo/ui/swift-ui";
+import { foregroundStyle, labelsHidden, pickerStyle, tag } from "@expo/ui/swift-ui/modifiers";
+import { AuthorizationStatus, authorizationStatusFor } from "@kingstinct/react-native-healthkit";
 import { useValue } from "@legendapp/state/react";
+import Constants from "expo-constants";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
+import { Alert, AppState, Linking } from "react-native";
 
-import { SectionHeader, timePartsToDate } from "@/components/settings-layout";
+import { timePartsToDate } from "@/components/settings-layout";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { daysLabel } from "@/lib/graveyard/graveyard";
+import { goalBreakdown } from "@/lib/health/goal";
+import { HK_WATER } from "@/lib/health/ids";
+import { todayExerciseMin$, weightLb$ } from "@/lib/health/store";
+import { formatAmount } from "@/lib/home/format";
+import {
+  cancelScheduledReminders,
+  scheduleNextReminder,
+  setupNotifications,
+} from "@/lib/notifications";
+import { prefs$ } from "@/lib/prefs";
+import {
+  formatExerciseMinutes,
+  formatWeightLb,
+  healthAccessLabel,
+  petNameError,
+} from "@/lib/settings/labels";
+import { validatePetName } from "@/lib/streak/rename";
+import { longestStreak$, renameCurrentPet, streakState$ } from "@/lib/streak/store";
+import {
+  NOTIFICATION_INTERVALS,
+  type NotificationInterval,
+  type VolumeDisplayUnit,
+} from "@/lib/types";
+import { formatVolumeLabel } from "@/lib/volume";
 
 const UNITS: VolumeDisplayUnit[] = ["fl-oz", "ml", "cup", "pt_us"];
+const DEFAULT_REMINDER_MINUTES: NotificationInterval = 20;
+const secondary = foregroundStyle({ type: "hierarchical", style: "secondary" });
 
-export default function SettingsGeneralScreen() {
+async function rescheduleReminders() {
+  const m = prefs$.reminderMinutes.get();
+  if (m == null || prefs$.remindersEnabled.get() === false) return;
+  await setupNotifications();
+  await scheduleNextReminder({
+    wakeUp: prefs$.wakeUp.get(),
+    bedtime: prefs$.bedtime.get(),
+    intervalMinutes: m,
+    afterLogAt: new Date(),
+  });
+}
+
+function readWaterAccess(): 0 | 1 | 2 {
+  try {
+    const s = authorizationStatusFor(HK_WATER);
+    if (s === AuthorizationStatus.sharingAuthorized) return 2;
+    if (s === AuthorizationStatus.sharingDenied) return 1;
+  } catch {
+    // HealthKit unavailable: treat as not set up.
+  }
+  return 0;
+}
+
+/** Re-read HealthKit access on focus and whenever the app returns from Settings. */
+function useWaterAccess(): 0 | 1 | 2 {
+  const [status, setStatus] = useState(readWaterAccess);
+  useFocusEffect(
+    useCallback(() => {
+      setStatus(readWaterAccess());
+      const sub = AppState.addEventListener("change", (s) => {
+        if (s === "active") setStatus(readWaterAccess());
+      });
+      return () => sub.remove();
+    }, []),
+  );
+  return status;
+}
+
+function promptRename(current: string) {
+  Alert.prompt(
+    "Rename your axolotl",
+    undefined,
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Save",
+        isPreferred: true,
+        onPress: (value?: string) => {
+          const result = validatePetName(value ?? "");
+          if (result.ok) renameCurrentPet(result.name);
+          else
+            Alert.alert(petNameError(result.error), undefined, [
+              {
+                text: "OK",
+                onPress: () =>
+                  promptRename(result.error === "empty" ? current : (value ?? current)),
+              },
+            ]);
+        },
+      },
+    ],
+    "plain-text",
+    current,
+  );
+}
+
+export default function SettingsScreen() {
   const colorScheme = useColorScheme();
-  const insets = useSafeAreaInsets();
 
-  const pageBg = PlatformColor("systemGroupedBackground");
-  const groupBg = PlatformColor("secondarySystemGroupedBackground");
-  const secondaryLabel = PlatformColor("secondaryLabel");
-
+  const pet = useValue(streakState$.pet);
+  const longest = useValue(longestStreak$);
   const unit = useValue(prefs$.unit);
   const wake = useValue(prefs$.wakeUp);
   const bed = useValue(prefs$.bedtime);
+  const remindersEnabled = useValue(prefs$.remindersEnabled);
+  const reminderMinutes = useValue(prefs$.reminderMinutes);
+  const weightLb = useValue(weightLb$);
+  const exerciseMin = useValue(todayExerciseMin$);
+  const waterAccess = useWaterAccess();
 
+  const goal = goalBreakdown(weightLb, exerciseMin);
   const wakeDate = useMemo(() => timePartsToDate(wake.hour, wake.minute), [wake.hour, wake.minute]);
   const bedDate = useMemo(() => timePartsToDate(bed.hour, bed.minute), [bed.hour, bed.minute]);
+  const remindersOn = remindersEnabled !== false && reminderMinutes != null;
 
-  const rescheduleRemindersIfNeeded = useCallback(async () => {
-    const m = prefs$.reminderMinutes.get();
-    if (m == null || prefs$.remindersEnabled.get() === false) return;
-    await setupNotifications();
-    await scheduleNextReminder({
-      wakeUp: prefs$.wakeUp.get(),
-      bedtime: prefs$.bedtime.get(),
-      intervalMinutes: m,
-      afterLogAt: new Date(),
-    });
-  }, []);
+  const version = Constants.expoConfig?.version ?? "—";
+  const build = Constants.expoConfig?.ios?.buildNumber;
 
   return (
-    <ScrollView
-      style={[{ flex: 1 }, { backgroundColor: pageBg }]}
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={[
-        {
-          paddingHorizontal: 20,
-          paddingTop: 12,
-          paddingBottom: 40,
-        },
-        { paddingBottom: Math.max(40, insets.bottom + 72) },
-      ]}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-    >
-      <SectionHeader color={secondaryLabel} first>
-        Volume unit
-      </SectionHeader>
-      <View style={{ marginBottom: 4 }}>
-        <Host
-          matchContents
-          colorScheme={colorScheme}
-          style={{ width: "100%", alignSelf: "stretch" }}
+    <Host style={{ flex: 1 }} colorScheme={colorScheme} useViewportSizeMeasurement>
+      <Form>
+        <Section
+          title="Your axolotl"
+          footer={pet ? undefined : <Text>Your egg hatches when you meet today&apos;s goal.</Text>}
         >
+          {pet ? (
+            <>
+              <LabeledContent label="Name">
+                <Text>{pet.name}</Text>
+              </LabeledContent>
+              <LabeledContent label="Current streak">
+                <Text>{daysLabel(pet.streakLength)}</Text>
+              </LabeledContent>
+            </>
+          ) : (
+            <LabeledContent label="Current streak">
+              <Text>Egg</Text>
+            </LabeledContent>
+          )}
+          <LabeledContent label="Longest streak">
+            <Text>{daysLabel(longest)}</Text>
+          </LabeledContent>
+          {pet ? (
+            <Button label="Rename…" systemImage="pencil" onPress={() => promptRename(pet.name)} />
+          ) : null}
+        </Section>
+
+        <Section
+          title="Daily goal"
+          footer={
+            <Text>
+              Your weight sets the base and each minute of exercise adds a little more. Both come
+              from Apple Health.
+            </Text>
+          }
+        >
+          <LabeledContent label="Today's goal">
+            <Text>{formatAmount(goal.totalFlOz, unit)}</Text>
+          </LabeledContent>
+          <LabeledContent label={`Weight · ${formatWeightLb(weightLb)}`}>
+            <Text modifiers={[secondary]}>{formatAmount(goal.fromWeightFlOz, unit)}</Text>
+          </LabeledContent>
+          <LabeledContent label={`Exercise · ${formatExerciseMinutes(exerciseMin)}`}>
+            <Text modifiers={[secondary]}>
+              {goal.fromExerciseFlOz > 0
+                ? `+${formatAmount(goal.fromExerciseFlOz, unit)}`
+                : "None yet"}
+            </Text>
+          </LabeledContent>
           <Picker
+            label="Units"
             selection={unit}
-            onSelectionChange={(s) => prefs$.unit.set(s as VolumeDisplayUnit)}
-            modifiers={[controlSize("large"), pickerStyle("segmented")]}
+            onSelectionChange={(u) => prefs$.unit.set(u as VolumeDisplayUnit)}
+            modifiers={[pickerStyle("segmented"), labelsHidden()]}
           >
             {UNITS.map((u) => (
-              <SText key={u} modifiers={[tag(u)]}>
+              <Text key={u} modifiers={[tag(u)]}>
                 {formatVolumeLabel(u)}
-              </SText>
+              </Text>
             ))}
           </Picker>
-        </Host>
-      </View>
+        </Section>
 
-      <SectionHeader color={secondaryLabel}>Wake & bedtime</SectionHeader>
-      <Text
-        style={[
-          {
-            fontSize: 13,
-            lineHeight: 18,
-            marginTop: 2,
-            marginBottom: 16,
-          },
-          { color: secondaryLabel },
-        ]}
-      >
-        Used for follow-up reminder windows after you log water.
-      </Text>
-      <View
-        style={[
-          {
-            borderRadius: 10,
-            overflow: "hidden",
-          },
-          { backgroundColor: groupBg },
-        ]}
-      >
-        <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
-          <Host
-            matchContents
-            colorScheme={colorScheme}
-            style={{ width: "100%", alignSelf: "stretch" }}
-          >
-            <VStack spacing={10} alignment="leading">
-              <DatePicker
-                title="Wake up"
-                selection={wakeDate}
-                displayedComponents={["hourAndMinute"]}
-                onDateChange={(d) => {
-                  prefs$.wakeUp.set({ hour: d.getHours(), minute: d.getMinutes() });
-                  void rescheduleRemindersIfNeeded();
-                }}
-              />
-              <Divider />
-              <DatePicker
-                title="Bedtime"
-                selection={bedDate}
-                displayedComponents={["hourAndMinute"]}
-                onDateChange={(d) => {
-                  prefs$.bedtime.set({ hour: d.getHours(), minute: d.getMinutes() });
-                  void rescheduleRemindersIfNeeded();
-                }}
-              />
-            </VStack>
-          </Host>
-        </View>
-      </View>
-      <SectionHeader color={secondaryLabel}>Notifications</SectionHeader>
-      <Link href="/settings/reminders" asChild>
-        <Pressable
-          style={({ pressed }) => [
-            {
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderRadius: 10,
-              paddingVertical: 12,
-              paddingHorizontal: 16,
-              minHeight: 44,
-            },
-            { backgroundColor: groupBg },
-            pressed && { opacity: 0.55 },
-          ]}
+        <Section
+          title="Your day"
+          footer={<Text>Sets the pace your axolotl expects, and when reminders can arrive.</Text>}
         >
-          <Text style={{ fontSize: 17, color: PlatformColor("label") }}>Reminders</Text>
-          <SymbolView
-            name="chevron.right"
-            size={14}
-            tintColor={PlatformColor("tertiaryLabel")}
-            resizeMode="scaleAspectFit"
+          <DatePicker
+            title="Wake up"
+            selection={wakeDate}
+            displayedComponents={["hourAndMinute"]}
+            onDateChange={(d) => {
+              prefs$.wakeUp.set({ hour: d.getHours(), minute: d.getMinutes() });
+              void rescheduleReminders();
+            }}
           />
-        </Pressable>
-      </Link>
-    </ScrollView>
+          <DatePicker
+            title="Bedtime"
+            selection={bedDate}
+            displayedComponents={["hourAndMinute"]}
+            onDateChange={(d) => {
+              prefs$.bedtime.set({ hour: d.getHours(), minute: d.getMinutes() });
+              void rescheduleReminders();
+            }}
+          />
+        </Section>
+
+        <Section
+          title="Reminders"
+          footer={
+            <Text>
+              A nudge this many minutes after you log water, only between wake up and bedtime.
+            </Text>
+          }
+        >
+          <Toggle
+            label="Remind me to drink"
+            isOn={remindersOn}
+            onIsOnChange={(on) => {
+              if (on) {
+                if (prefs$.reminderMinutes.get() == null) {
+                  prefs$.reminderMinutes.set(DEFAULT_REMINDER_MINUTES);
+                }
+                prefs$.remindersEnabled.set(true);
+                void rescheduleReminders();
+              } else {
+                prefs$.remindersEnabled.set(false);
+                void cancelScheduledReminders();
+              }
+            }}
+          />
+          {remindersOn ? (
+            <Picker
+              label="After logging"
+              selection={reminderMinutes}
+              onSelectionChange={(m) => {
+                prefs$.reminderMinutes.set(m as NotificationInterval);
+                void rescheduleReminders();
+              }}
+              modifiers={[pickerStyle("segmented"), labelsHidden()]}
+            >
+              {NOTIFICATION_INTERVALS.map((m) => (
+                <Text key={m} modifiers={[tag(m)]}>
+                  {`${m} min`}
+                </Text>
+              ))}
+            </Picker>
+          ) : null}
+        </Section>
+
+        <Section
+          title="Apple Health"
+          footer={
+            <Text>
+              Your water history and trends live in Apple Health. Change access in Settings under
+              Health → Data Access.
+            </Text>
+          }
+        >
+          <LabeledContent label="Water access">
+            <Text>{healthAccessLabel(waterAccess)}</Text>
+          </LabeledContent>
+          <Button
+            label="Open Health"
+            systemImage="heart.text.square"
+            onPress={() => void Linking.openURL("x-apple-health://").catch(() => undefined)}
+          />
+          <Button
+            label="Open Settings"
+            systemImage="gear"
+            onPress={() => void Linking.openSettings()}
+          />
+        </Section>
+
+        <Section title="About">
+          <LabeledContent label="Version">
+            <Text>{build ? `${version} (${build})` : version}</Text>
+          </LabeledContent>
+        </Section>
+      </Form>
+    </Host>
   );
 }
