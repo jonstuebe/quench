@@ -1,13 +1,7 @@
 /** Pure copy + preset helpers for the Home tab (covered by `bun test`). */
 import type { PetMood } from "@/lib/streak/view";
 import type { VolumeDisplayUnit } from "@/lib/types";
-import { flOzToDisplay, formatDisplayVolumeValue, formatVolumeLabel } from "@/lib/volume";
-
-/** Display precision for mood-line amounts: whole fl oz / ml, quarter cups / pints. */
-const STEP: Record<VolumeDisplayUnit, number> = { "fl-oz": 1, ml: 1, cup: 0.25, pt_us: 0.25 };
-
-const roundForDisplay = (flOz: number, unit: VolumeDisplayUnit) =>
-  Math.round(flOzToDisplay(flOz, unit) / STEP[unit]) * STEP[unit];
+import { formatAmount, roundedDisplay } from "./format";
 
 export function streakChipLabel(currentStreak: number): string {
   return currentStreak > 0 ? `Day ${currentStreak}` : "Start your streak";
@@ -37,10 +31,9 @@ export type MoodLineInput = {
 
 /** One short sentence under the progress readout. */
 export function moodLine({ mood, name, unit, behindFlOz, remainingFlOz }: MoodLineInput): string {
-  const amount = (flOz: number) =>
-    `${formatDisplayVolumeValue(roundForDisplay(flOz, unit), unit)} ${formatVolumeLabel(unit)}`;
+  const amount = (flOz: number) => formatAmount(flOz, unit);
   const pet = name ?? "Your axolotl";
-  const behindShown = roundForDisplay(behindFlOz, unit) > 0;
+  const behindShown = roundedDisplay(behindFlOz, unit) > 0;
   if (!behindShown && (mood === "content" || mood === "thirsty" || mood === "parched")) {
     return `${pet} is right on pace`;
   }
