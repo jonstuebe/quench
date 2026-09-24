@@ -10,7 +10,7 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { SymbolView, type SFSymbol } from "expo-symbols";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { AppState, Linking, ScrollView, Text, View } from "react-native";
+import { AccessibilityInfo, AppState, Linking, ScrollView, Text, View } from "react-native";
 import Animated, {
   Easing,
   FadeIn,
@@ -39,7 +39,12 @@ import { ensureHealthKitAuthorization } from "@/lib/health/authorize";
 import { HK_WATER } from "@/lib/health/ids";
 import { getWeightLb, sumExerciseMinutesForDay } from "@/lib/health/queries";
 import { refreshTodayMetrics } from "@/lib/health/store";
-import { notificationsAllowed, setupNotifications } from "@/lib/notifications";
+import {
+  cancelScheduledReminders,
+  notificationsAllowed,
+  setupNotifications,
+} from "@/lib/notifications";
+import { rescheduleReminders } from "@/lib/reminders";
 import {
   goalPreview,
   ONBOARDING_STEPS,
@@ -66,6 +71,14 @@ const LEVELS: Record<OnboardingStep, number> = {
   ready: 0.62,
 };
 const EASE = Easing.out(Easing.exp);
+/** Spoken with the step position when the step changes (matches each step's heading). */
+const STEP_TITLES: Record<OnboardingStep, string> = {
+  welcome: "Meet your egg.",
+  how: "How it works",
+  health: "Apple Health",
+  day: "Your day",
+  ready: "You're all set",
+};
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -88,10 +101,25 @@ export default function OnboardingScreen() {
     router.replace("/home");
   };
 
+  // VoiceOver: announce the new step once its entering animation has settled.
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    const t = setTimeout(
+      () =>
+        AccessibilityInfo.announceForAccessibility(`${progressLabel(step)}. ${STEP_TITLES[step]}`),
+      420,
+    );
+    return () => clearTimeout(t);
+  }, [step]);
+
   const entering = (dir.current === 1 ? FadeInRight : FadeInLeft).duration(380).easing(EASE);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 }} onAccessibilityEscape={back ? () => go(back, -1) : undefined}>
       <OnboardingBackdrop level={LEVELS[step]} />
       <View
         style={{
@@ -376,6 +404,7 @@ function HealthStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
           <View
             key={r.icon}
             accessible
+            accessibilityLabel={r.text}
             style={{ flexDirection: "row", gap: 12, alignItems: "center", minHeight: 32 }}
           >
             <View style={{ width: 28, alignItems: "center" }}>
@@ -409,8 +438,8 @@ function HealthStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
             }}
             maxFontSizeMultiplier={1.8}
           >
-            Health access is off, so your logs won&apos;t be saved and you&apos;ll start with a
-            standard goal. You can turn it on in Settings under Health → Data Access.
+            Your logs won&apos;t be saved to Apple Health. To turn it on, open Settings, then
+            Health, and allow Quench to write Water.
           </Text>
           <GlassTextButton label="Open Settings" onPress={() => void Linking.openSettings()} />
         </View>
@@ -533,9 +562,16 @@ function DayStep({ onNext }: { onNext: () => void }) {
                     prefs$.reminderMinutes.set(DEFAULT_REMINDER_MINUTES);
                   }
                   prefs$.remindersEnabled.set(true);
-                  void setupNotifications().then(setNotifsAllowed, () => setNotifsAllowed(false));
+                  void setupNotifications().then(
+                    (ok) => {
+                      setNotifsAllowed(ok);
+                      if (ok) void rescheduleReminders();
+                    },
+                    () => setNotifsAllowed(false),
+                  );
                 } else {
                   prefs$.remindersEnabled.set(false);
+                  void cancelScheduledReminders();
                 }
               }}
             />

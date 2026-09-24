@@ -27,9 +27,9 @@ import { formatAmount } from "@/lib/home/format";
 import {
   cancelScheduledReminders,
   notificationsAllowed,
-  scheduleNextReminder,
   setupNotifications,
 } from "@/lib/notifications";
+import { rescheduleReminders } from "@/lib/reminders";
 import { prefs$ } from "@/lib/prefs";
 import {
   formatExerciseMinutes,
@@ -49,18 +49,6 @@ import { formatVolumeLabel } from "@/lib/volume";
 const UNITS: VolumeDisplayUnit[] = ["fl-oz", "ml", "cup", "pt_us"];
 const DEFAULT_REMINDER_MINUTES: NotificationInterval = 20;
 const secondary = foregroundStyle({ type: "hierarchical", style: "secondary" });
-
-async function rescheduleReminders() {
-  const m = prefs$.reminderMinutes.get();
-  if (m == null || prefs$.remindersEnabled.get() === false) return;
-  await setupNotifications();
-  await scheduleNextReminder({
-    wakeUp: prefs$.wakeUp.get(),
-    bedtime: prefs$.bedtime.get(),
-    intervalMinutes: m,
-    afterLogAt: new Date(),
-  });
-}
 
 function readWaterAccess(): 0 | 1 | 2 {
   try {

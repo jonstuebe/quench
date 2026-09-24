@@ -79,7 +79,7 @@ export function AxolotlPet({
   const clock = useFrameCallback((f) => {
     const dt = Math.min(0.05, (f.timeSincePreviousFrame ?? 16) / 1000);
     phase.value += dt * tempo.value;
-  });
+  }, !paused);
 
   useEffect(() => {
     amp.value = withTiming(reduced ? 0.15 : 1, { duration: 300 });
