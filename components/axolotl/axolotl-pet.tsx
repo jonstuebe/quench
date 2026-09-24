@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import {
+  cancelAnimation,
   Easing,
   ReduceMotion,
   useFrameCallback,
@@ -33,13 +34,24 @@ type Props = {
   size: number;
   /** Increment to play one drinking reaction (bubbles + bounce + haptic). */
   drinkToken: number;
+  /** Stop the clock and blinking (screen unfocused / app backgrounded). */
+  paused?: boolean;
+  /** Set false when a wrapping control provides the accessibility element. */
+  accessible?: boolean;
 };
 
 /**
  * Hero pet: an egg until the first goal-met day, then a mood-reactive axolotl. Plays a hatch
  * sequence when `mood` goes from "egg" to a living mood while mounted.
  */
-export function AxolotlPet({ mood, name, size, drinkToken }: Props) {
+export function AxolotlPet({
+  mood,
+  name,
+  size,
+  drinkToken,
+  paused = false,
+  accessible = true,
+}: Props) {
   const reduced = useReducedMotion();
   const isEgg = mood === "egg";
   const v = moodVisuals(mood) ?? HATCHLING;
@@ -64,7 +76,7 @@ export function AxolotlPet({ mood, name, size, drinkToken }: Props) {
   const hatch = useSharedValue(0);
 
   // Tempo-scaled clock, integrated on the UI thread so tempo changes never jump the phase.
-  useFrameCallback((f) => {
+  const clock = useFrameCallback((f) => {
     const dt = Math.min(0.05, (f.timeSincePreviousFrame ?? 16) / 1000);
     phase.value += dt * tempo.value;
   });
@@ -90,8 +102,17 @@ export function AxolotlPet({ mood, name, size, drinkToken }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mood, isEgg]);
 
-  // Periodic blink (declarative repeat on the UI thread).
   useEffect(() => {
+    clock.setActive(!paused);
+  }, [paused, clock]);
+
+  // Periodic blink (declarative repeat on the UI thread); stopped while paused.
+  useEffect(() => {
+    if (paused) {
+      cancelAnimation(m.blink);
+      m.blink.value = 1;
+      return;
+    }
     m.blink.value = withRepeat(
       withSequence(
         withDelay(3400, withTiming(0, { duration: 80 })),
@@ -104,7 +125,7 @@ export function AxolotlPet({ mood, name, size, drinkToken }: Props) {
       ReduceMotion.Never,
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [paused]);
 
   // Drinking reaction.
   const lastDrink = useRef(drinkToken);
@@ -144,9 +165,9 @@ export function AxolotlPet({ mood, name, size, drinkToken }: Props) {
   const scale = size / VIEWBOX;
   return (
     <View
-      accessible
-      accessibilityRole="image"
-      accessibilityLabel={petAccessibilityLabel(name, mood)}
+      accessible={accessible}
+      accessibilityRole={accessible ? "image" : undefined}
+      accessibilityLabel={accessible ? petAccessibilityLabel(name, mood) : undefined}
       style={{ width: size, height: size }}
     >
       <Canvas style={{ width: size, height: size }}>

@@ -12,8 +12,8 @@ import {
   Path,
   RadialGradient,
   Skia,
+  usePathInterpolation,
   vec,
-  type SkPath,
 } from "@shopify/react-native-skia";
 import { useDerivedValue, type SharedValue } from "react-native-reanimated";
 
@@ -93,6 +93,12 @@ function Gills({ m }: { m: AxolotlMotion }) {
   );
 }
 
+/** Sad / worried brows (left, right): inner end raised. */
+const BROWS = [
+  Skia.Path.MakeFromSVGString("M-8 -9 L 6 -14")!,
+  Skia.Path.MakeFromSVGString("M8 -9 L -6 -14")!,
+];
+
 function Eye({ x, style, side }: { x: number; style: EyeStyle; side: -1 | 1 }) {
   if (style === "joy") {
     return (
@@ -103,10 +109,7 @@ function Eye({ x, style, side }: { x: number; style: EyeStyle; side: -1 | 1 }) {
   }
   const r = style === "worried" ? 7 : style === "sad" ? 5.6 : 6.6;
   // Sad / worried brows: inner end (towards the centre line) raised.
-  const brow =
-    style === "sad" || style === "worried"
-      ? Skia.Path.MakeFromSVGString(side < 0 ? "M-8 -9 L 6 -14" : "M8 -9 L -6 -14")
-      : null;
+  const brow = style === "sad" || style === "worried" ? BROWS[side < 0 ? 0 : 1] : null;
   return (
     <Group transform={[{ translateX: x }, { translateY: EYE_Y + (style === "sad" ? 1.5 : 0) }]}>
       <Circle cx={0} cy={0} r={r} color={C.eye} />
@@ -126,29 +129,43 @@ function Eye({ x, style, side }: { x: number; style: EyeStyle; side: -1 | 1 }) {
   );
 }
 
+const mouthCurve = (s: number) =>
+  Skia.Path.MakeFromSVGString(
+    `M${CX - 17} ${MOUTH_Y} Q ${CX} ${MOUTH_Y + s * 11} ${CX + 17} ${MOUTH_Y}`,
+  )!;
+/** Frown → flat → grin; interpolated on the UI thread (no per-frame path parsing). */
+const MOUTH_CURVES = [mouthCurve(-1), mouthCurve(0), mouthCurve(1)];
+const OPEN_MOUTH = Skia.Path.MakeFromSVGString(
+  `M${CX - 15} ${MOUTH_Y} Q ${CX} ${MOUTH_Y + 18} ${CX + 15} ${MOUTH_Y} Q ${CX} ${MOUTH_Y + 5} ${CX - 15} ${MOUTH_Y} Z`,
+)!;
+
 function Mouth({ m, open }: { m: AxolotlMotion; open: boolean }) {
-  const path = useDerivedValue<SkPath>(() => {
-    const sip = Math.sin(Math.min(1, m.drink.value * 1.4) * Math.PI);
-    // While sipping the mouth puckers into a small "o"-ish curve.
-    const s = m.smile.value * (1 - sip) + 0.2 * sip;
-    const w = 17 - sip * 8;
-    const d = `M${CX - w} ${MOUTH_Y} Q ${CX} ${MOUTH_Y + s * 11} ${CX + w} ${MOUTH_Y}`;
-    return Skia.Path.MakeFromSVGString(d) ?? Skia.Path.Make();
-  });
-  const openPath = open
-    ? Skia.Path.MakeFromSVGString(
-        `M${CX - 15} ${MOUTH_Y} Q ${CX} ${MOUTH_Y + 18} ${CX + 15} ${MOUTH_Y} Q ${CX} ${MOUTH_Y + 5} ${CX - 15} ${MOUTH_Y} Z`,
-      )
-    : null;
-  if (openPath) {
+  const sip = useDerivedValue(() => Math.sin(Math.min(1, m.drink.value * 1.4) * Math.PI));
+  const path = usePathInterpolation(m.smile, [-1, 0, 1], MOUTH_CURVES);
+  const curveOpacity = useDerivedValue(() => 1 - sip.value);
+  // While sipping, the curve gives way to a small puckered "o".
+  const pucker = useDerivedValue(() => sip.value);
+  if (open) {
     return (
       <>
-        <Path path={openPath} color={C.mouth} />
+        <Path path={OPEN_MOUTH} color={C.mouth} />
         <Oval rect={ovalRect(CX, MOUTH_Y + 9, 6, 3.5)} color={C.tongue} />
       </>
     );
   }
-  return <Path path={path} color={C.mouth} style="stroke" strokeWidth={3} strokeCap="round" />;
+  return (
+    <>
+      <Path
+        path={path}
+        color={C.mouth}
+        style="stroke"
+        strokeWidth={3}
+        strokeCap="round"
+        opacity={curveOpacity}
+      />
+      <Oval rect={ovalRect(CX, MOUTH_Y + 2, 5, 4.5)} color={C.mouth} opacity={pucker} />
+    </>
+  );
 }
 
 function Sparkle({ i, m }: { i: number; m: AxolotlMotion }) {
