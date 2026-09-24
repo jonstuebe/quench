@@ -11,8 +11,8 @@ import {
 import { useValue } from "@legendapp/state/react";
 
 /**
- * Fill fraction and palette for the water Skia shader / web gradient, shared by
- * WaterWidget and full-screen home backdrop.
+ * Fill fraction and palette for the full-screen home water backdrop (Skia shader / web
+ * gradient).
  */
 export function useWaterShaderUniforms() {
   const colorScheme = useColorScheme();

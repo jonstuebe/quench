@@ -1,11 +1,9 @@
-import { Button, GlassEffectContainer, Host, HStack, Image } from "@expo/ui/swift-ui";
-import { accessibilityLabel, buttonStyle, controlSize, font } from "@expo/ui/swift-ui/modifiers";
 import { useValue } from "@legendapp/state/react";
 import { GlassContainer, GlassView } from "expo-glass-effect";
-import { router, Stack } from "expo-router";
+import { router, Stack, useIsFocused } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { AppState, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AxolotlPet } from "@/components/axolotl/axolotl-pet";
@@ -15,19 +13,26 @@ import { Fonts, glassLabelOnBrightLight } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useWaterShaderUniforms } from "@/hooks/use-water-shader-uniforms";
 import { useWaterUndoLastDrink } from "@/hooks/use-water-undo-last-drink";
+import { formatAmountValue, formatDisplayAmount } from "@/lib/home/format";
 import { moodLine, quickLogPresets, streakChipLabel } from "@/lib/home/copy";
 import { petAccessibilityLabel } from "@/lib/axolotl/visuals";
 import { DEV_PREVIEW_MOODS, DEV_START_MOOD } from "@/lib/dev/pet-preview";
-import { logWaterFlOz } from "@/lib/log-water";
+import { useLogWater } from "@/lib/log-water";
 import { prefs$ } from "@/lib/prefs";
 import { currentPet$ } from "@/lib/streak/store";
 import type { PetMood } from "@/lib/streak/view";
-import {
-  displayToFlOz,
-  flOzToDisplay,
-  formatDisplayVolumeValue,
-  formatVolumeLabel,
-} from "@/lib/volume";
+import { displayToFlOz, formatVolumeLabel } from "@/lib/volume";
+
+/** Home is focused and the app is in the foreground (drives pausing the pet's animation). */
+function useScreenActive() {
+  const focused = useIsFocused();
+  const [appActive, setAppActive] = useState(AppState.currentState === "active");
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (s) => setAppActive(s === "active"));
+    return () => sub.remove();
+  }, []);
+  return focused && appActive;
+}
 
 export default function HomeScreen() {
   const scheme = useColorScheme();
@@ -36,6 +41,7 @@ export default function HomeScreen() {
   const inkMuted = scheme === "light" ? "rgba(13,40,64,0.68)" : "rgba(255,255,255,0.72)";
 
   const { water, loading, goalFlOz } = useWaterShaderUniforms();
+  const active = useScreenActive();
   const unit = useValue(prefs$.unit);
   const pet = useValue(currentPet$);
 
@@ -47,7 +53,10 @@ export default function HomeScreen() {
     setDevMood(i + 1 < DEV_PREVIEW_MOODS.length ? DEV_PREVIEW_MOODS[i + 1] : null);
   };
 
-  const mood: PetMood = preview ?? pet.mood;
+  // Until today's water has loaded, the pace mood is meaningless (it would read as parched on a
+  // cold launch), so a living pet holds a neutral "content" face and line.
+  const holdNeutral = loading && pet.kind === "alive" && !preview;
+  const mood: PetMood = preview ?? (holdNeutral ? "content" : pet.mood);
   const petName =
     pet.kind === "alive" ? pet.pet.name : preview && preview !== "egg" ? "Mochi" : null;
   const streak = preview ? (preview === "egg" ? 0 : 12) : pet.currentStreak;
@@ -73,16 +82,19 @@ export default function HomeScreen() {
   const petSize = Math.max(0, Math.min(heroW, heroH, 420));
 
   const unitLabel = formatVolumeLabel(unit);
-  const fmt = (flOz: number) => formatDisplayVolumeValue(flOzToDisplay(flOz, unit), unit);
+  const fmt = (flOz: number) => formatAmountValue(flOz, unit);
   const fraction = goalFlOz > 0 ? Math.min(1, water / goalFlOz) : 0;
   const behindFlOz = pet.kind === "alive" ? Math.max(0, pet.pace.expectedFlOz - water) : 0;
-  const line = moodLine({
-    mood,
-    name: petName,
-    unit,
-    behindFlOz: preview ? 12 : behindFlOz,
-    remainingFlOz: Math.max(0, goalFlOz - water),
-  });
+  const line = holdNeutral
+    ? "Checking today's water…"
+    : moodLine({
+        mood,
+        name: petName,
+        unit,
+        behindFlOz: preview ? 12 : behindFlOz,
+        remainingFlOz: Math.max(0, goalFlOz - water),
+      });
+  const { log, saving } = useLogWater();
 
   const flame = streak > 0;
 
@@ -120,7 +132,13 @@ export default function HomeScreen() {
                 size={17}
                 tintColor={flame ? "#FF8A3D" : "#4FB8E8"}
               />
-              <Text style={[chipText, { color: ink }]}>{streakChipLabel(streak)}</Text>
+              <Text
+                style={[chipText, { color: ink }]}
+                maxFontSizeMultiplier={1.4}
+                numberOfLines={1}
+              >
+                {streakChipLabel(streak)}
+              </Text>
             </GlassView>
             {petName ? (
               <GlassView
@@ -129,7 +147,13 @@ export default function HomeScreen() {
                 accessible
                 accessibilityLabel={`Pet name: ${petName}`}
               >
-                <Text style={[chipText, { color: ink }]}>{petName}</Text>
+                <Text
+                  style={[chipText, { color: ink }]}
+                  maxFontSizeMultiplier={1.4}
+                  numberOfLines={1}
+                >
+                  {petName}
+                </Text>
               </GlassView>
             ) : null}
           </GlassContainer>
@@ -146,9 +170,17 @@ export default function HomeScreen() {
                 onLongPress={__DEV__ ? cycleDevMood : undefined}
                 onPress={() => setDrinkToken((n) => n + 1)}
                 accessibilityLabel={petAccessibilityLabel(petName, mood)}
+                accessibilityRole="button"
                 accessibilityHint="Double-tap to say hi"
               >
-                <AxolotlPet mood={mood} name={petName} size={petSize} drinkToken={drinkToken} />
+                <AxolotlPet
+                  mood={mood}
+                  name={petName}
+                  size={petSize}
+                  drinkToken={drinkToken}
+                  accessible={false}
+                  paused={!active}
+                />
               </Pressable>
             ) : null}
           </View>
@@ -209,48 +241,81 @@ export default function HomeScreen() {
             </Text>
           </GlassView>
 
-          {/* Quick log: native SwiftUI glass buttons in one glass container */}
-          <View style={{ paddingBottom: insets.bottom + 30, alignItems: "center" }}>
-            <Host matchContents>
-              <GlassEffectContainer spacing={10}>
-                <HStack spacing={10}>
-                  {quickLogPresets(unit).map((v) => {
-                    const text = `${formatDisplayVolumeValue(v, unit)} ${unitLabel}`;
-                    const short = `+${formatDisplayVolumeValue(v, unit)} ${unit === "fl-oz" ? "oz" : unitLabel}`;
-                    return (
-                      <Button
-                        key={v}
-                        label={short}
-                        onPress={() => void logWaterFlOz(displayToFlOz(v, unit))}
-                        modifiers={[
-                          buttonStyle("glass"),
-                          controlSize("large"),
-                          font({ design: "rounded", weight: "semibold" }),
-                          accessibilityLabel(`Log ${text}`),
-                        ]}
-                      />
-                    );
-                  })}
-                  <Button
-                    onPress={() => router.push("/home/log")}
-                    modifiers={[
-                      buttonStyle("glassProminent"),
-                      controlSize("large"),
-                      accessibilityLabel("Log a custom amount"),
-                    ]}
-                  >
-                    <Image systemName="plus" />
-                  </Button>
-                </HStack>
-              </GlassEffectContainer>
-            </Host>
-          </View>
+          {/* Quick log: interactive glass pills that share the row's width, never overflowing */}
+          <GlassContainer
+            spacing={10}
+            style={{
+              flexDirection: "row",
+              gap: 10,
+              paddingBottom: insets.bottom + NATIVE_TAB_BAR_CLEARANCE,
+            }}
+          >
+            {quickLogPresets(unit).map((v) => {
+              const text = formatDisplayAmount(v, unit);
+              return (
+                <Pressable
+                  key={v}
+                  style={{ flex: 1, minWidth: 0 }}
+                  disabled={saving}
+                  onPress={() => void log(displayToFlOz(v, unit))}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Log ${text}`}
+                  accessibilityState={{ disabled: saving }}
+                >
+                  <GlassView glassEffectStyle="regular" isInteractive style={pill}>
+                    <Text
+                      style={[pillText, { color: ink }]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.6}
+                      maxFontSizeMultiplier={1.4}
+                    >
+                      {text}
+                    </Text>
+                  </GlassView>
+                </Pressable>
+              );
+            })}
+            <Pressable
+              onPress={() => router.push("/home/log")}
+              accessibilityRole="button"
+              accessibilityLabel="Log a custom amount"
+            >
+              <GlassView
+                glassEffectStyle="regular"
+                isInteractive
+                tintColor="#0A84FF"
+                style={[pill, { width: PILL_H, paddingHorizontal: 0 }]}
+              >
+                <SymbolView name="plus" size={20} weight="semibold" tintColor="#FFFFFF" />
+              </GlassView>
+            </Pressable>
+          </GlassContainer>
         </View>
       </View>
       <GoalConfettiOverlay runId={goalConfettiRun} />
     </>
   );
 }
+
+/**
+ * Space to leave above the safe-area bottom so the quick-log bar clears the iOS 26 floating
+ * NativeTabs bar (≈62pt tall incl. its bottom margin, minus the 34pt home-indicator inset it
+ * shares). NativeTabs doesn't expose its height to screens. `NativeTabs.BottomAccessory`
+ * exists, but it is tab-global (it would show on Graveyard/Settings too) and collapses into
+ * the minimized bar, so the bar lives in the Home screen instead.
+ */
+const NATIVE_TAB_BAR_CLEARANCE = 30;
+
+const PILL_H = 52;
+const pill = {
+  height: PILL_H,
+  borderRadius: PILL_H / 2,
+  alignItems: "center" as const,
+  justifyContent: "center" as const,
+  paddingHorizontal: 10,
+};
+const pillText = { fontFamily: Fonts.rounded, fontSize: 17, fontWeight: "600" as const };
 
 const chip = {
   flexDirection: "row" as const,
