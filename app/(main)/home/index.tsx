@@ -79,7 +79,7 @@ export default function HomeScreen() {
 
   const [heroH, setHeroH] = useState(0);
   const [heroW, setHeroW] = useState(0);
-  const petSize = Math.max(0, Math.min(heroW, heroH, 420));
+  const petSize = Math.max(0, Math.min(heroW, heroH, 420) * 0.85);
 
   const unitLabel = formatVolumeLabel(unit);
   const fmt = (flOz: number) => formatAmountValue(flOz, unit);
