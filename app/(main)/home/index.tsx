@@ -1,4 +1,4 @@
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 
@@ -33,7 +33,6 @@ function WaterWidgetProgressFooter() {
 }
 
 export default function HomeScreen() {
-  const router = useRouter();
   const { water, loading, goalFlOz } = useWaterShaderUniforms();
   const prevWaterRef = useRef<number | null>(null);
   const [goalConfettiRun, setGoalConfettiRun] = useState(0);
@@ -61,9 +60,6 @@ export default function HomeScreen() {
         {showUndoInHeader ? (
           <Stack.Toolbar.Button icon="arrow.uturn.backward" onPress={onUndo} />
         ) : null}
-      </Stack.Toolbar>
-      <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button icon="gearshape" onPress={() => router.push("/settings")} />
       </Stack.Toolbar>
       <View style={{ flex: 1 }}>
         <WaterHomeShaderBackdrop />

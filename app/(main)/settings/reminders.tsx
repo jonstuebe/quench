@@ -47,7 +47,7 @@ export default function SettingsRemindersScreen() {
   return (
     <ScrollView
       style={[{ flex: 1 }, { backgroundColor: pageBg }]}
-      contentInsetAdjustmentBehavior="never"
+      contentInsetAdjustmentBehavior="automatic"
       removeClippedSubviews={false}
       contentContainerStyle={[
         {

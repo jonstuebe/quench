@@ -6,7 +6,9 @@ import { formatVolumeLabel } from "@/lib/volume";
 import { DatePicker, Divider, Host, Picker, Text as SText, VStack } from "@expo/ui/swift-ui";
 import { controlSize, pickerStyle, tag } from "@expo/ui/swift-ui/modifiers";
 import { useCallback, useMemo } from "react";
-import { PlatformColor, ScrollView, Text, View } from "react-native";
+import { Link } from "expo-router";
+import { SymbolView } from "expo-symbols";
+import { PlatformColor, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useValue } from "@legendapp/state/react";
@@ -45,7 +47,7 @@ export default function SettingsGeneralScreen() {
   return (
     <ScrollView
       style={[{ flex: 1 }, { backgroundColor: pageBg }]}
-      contentInsetAdjustmentBehavior="never"
+      contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={[
         {
           paddingHorizontal: 20,
@@ -133,6 +135,32 @@ export default function SettingsGeneralScreen() {
           </Host>
         </View>
       </View>
+      <SectionHeader color={secondaryLabel}>Notifications</SectionHeader>
+      <Link href="/settings/reminders" asChild>
+        <Pressable
+          style={({ pressed }) => [
+            {
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderRadius: 10,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              minHeight: 44,
+            },
+            { backgroundColor: groupBg },
+            pressed && { opacity: 0.55 },
+          ]}
+        >
+          <Text style={{ fontSize: 17, color: PlatformColor("label") }}>Reminders</Text>
+          <SymbolView
+            name="chevron.right"
+            size={14}
+            tintColor={PlatformColor("tertiaryLabel")}
+            resizeMode="scaleAspectFit"
+          />
+        </Pressable>
+      </Link>
     </ScrollView>
   );
 }
