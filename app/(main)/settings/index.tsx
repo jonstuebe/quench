@@ -13,7 +13,7 @@ import { foregroundStyle, labelsHidden, pickerStyle, tag } from "@expo/ui/swift-
 import { AuthorizationStatus, authorizationStatusFor } from "@kingstinct/react-native-healthkit";
 import { useValue } from "@legendapp/state/react";
 import Constants from "expo-constants";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Alert, AppState, Linking } from "react-native";
 
@@ -327,6 +327,16 @@ export default function SettingsScreen() {
           <LabeledContent label="Version">
             <Text>{build ? `${version} (${build})` : version}</Text>
           </LabeledContent>
+          {__DEV__ ? (
+            <Button
+              label="Replay onboarding"
+              systemImage="arrow.counterclockwise"
+              onPress={() => {
+                prefs$.onboardingComplete.set(false);
+                router.replace("/onboarding");
+              }}
+            />
+          ) : null}
         </Section>
       </Form>
     </Host>
