@@ -26,6 +26,7 @@ import { todayExerciseMin$, weightLb$ } from "@/lib/health/store";
 import { formatAmount } from "@/lib/home/format";
 import {
   cancelScheduledReminders,
+  notificationsAllowed,
   scheduleNextReminder,
   setupNotifications,
 } from "@/lib/notifications";
@@ -87,6 +88,22 @@ function useWaterAccess(): 0 | 1 | 2 {
   return status;
 }
 
+/** Notification permission, re-checked on focus and on return to the app. */
+function useNotificationsAllowed(): [boolean, (v: boolean) => void] {
+  const [allowed, setAllowed] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      const check = () => void notificationsAllowed().then(setAllowed, () => undefined);
+      check();
+      const sub = AppState.addEventListener("change", (s) => {
+        if (s === "active") check();
+      });
+      return () => sub.remove();
+    }, []),
+  );
+  return [allowed, setAllowed];
+}
+
 function promptRename(current: string) {
   Alert.prompt(
     "Rename your axolotl",
@@ -128,6 +145,7 @@ export default function SettingsScreen() {
   const weightLb = useValue(weightLb$);
   const exerciseMin = useValue(todayExerciseMin$);
   const waterAccess = useWaterAccess();
+  const [notifsAllowed, setNotifsAllowed] = useNotificationsAllowed();
 
   const goal = goalBreakdown(weightLb, exerciseMin);
   const wakeDate = useMemo(() => timePartsToDate(wake.hour, wake.minute), [wake.hour, wake.minute]);
@@ -230,7 +248,9 @@ export default function SettingsScreen() {
           title="Reminders"
           footer={
             <Text>
-              A nudge this many minutes after you log water, only between wake up and bedtime.
+              {remindersOn && !notifsAllowed
+                ? "Notifications are off for Quench, so reminders can't arrive. Turn them on in Settings."
+                : "A nudge this many minutes after you log water, only between wake up and bedtime."}
             </Text>
           }
         >
@@ -243,7 +263,10 @@ export default function SettingsScreen() {
                   prefs$.reminderMinutes.set(DEFAULT_REMINDER_MINUTES);
                 }
                 prefs$.remindersEnabled.set(true);
-                void rescheduleReminders();
+                void setupNotifications().then((ok) => {
+                  setNotifsAllowed(ok);
+                  if (ok) void rescheduleReminders();
+                });
               } else {
                 prefs$.remindersEnabled.set(false);
                 void cancelScheduledReminders();
@@ -267,6 +290,13 @@ export default function SettingsScreen() {
               ))}
             </Picker>
           ) : null}
+          {remindersOn && !notifsAllowed ? (
+            <Button
+              label="Turn On Notifications"
+              systemImage="bell.badge"
+              onPress={() => void Linking.openSettings()}
+            />
+          ) : null}
         </Section>
 
         <Section
@@ -278,7 +308,7 @@ export default function SettingsScreen() {
             </Text>
           }
         >
-          <LabeledContent label="Water access">
+          <LabeledContent label="Water">
             <Text>{healthAccessLabel(waterAccess)}</Text>
           </LabeledContent>
           <Button
