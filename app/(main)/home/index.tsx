@@ -23,20 +23,17 @@ import { useLogWater } from "@/lib/log-water";
 import { now$ } from "@/lib/clock";
 import { prefs$ } from "@/lib/prefs";
 import { addDaysToKey, toDayKey } from "@/lib/streak/day";
-import { currentPet$ } from "@/lib/streak/store";
+import { lastFinalDay } from "@/lib/streak/evaluate";
+import { currentPet$, streakState$ } from "@/lib/streak/store";
 import type { PetMood } from "@/lib/streak/view";
 import { displayToFlOz, formatVolumeLabel } from "@/lib/volume";
 
 /** Home is focused and the app is in the foreground (drives pausing the pet's animation). */
 function useScreenActive() {
   const focused = useIsFocused();
-  const [appActive, setAppActive] = useState(
-    AppState.currentState === "active",
-  );
+  const [appActive, setAppActive] = useState(AppState.currentState === "active");
   useEffect(() => {
-    const sub = AppState.addEventListener("change", (s) =>
-      setAppActive(s === "active"),
-    );
+    const sub = AppState.addEventListener("change", (s) => setAppActive(s === "active"));
     return () => sub.remove();
   }, []);
   return focused && appActive;
@@ -46,8 +43,7 @@ export default function HomeScreen() {
   const scheme = useColorScheme();
   const insets = useSafeAreaInsets();
   const ink = scheme === "light" ? glassLabelOnBrightLight : "#FFFFFF";
-  const inkMuted =
-    scheme === "light" ? "rgba(13,40,64,0.68)" : "rgba(255,255,255,0.72)";
+  const inkMuted = scheme === "light" ? "rgba(13,40,64,0.68)" : "rgba(255,255,255,0.72)";
 
   const { water, loading, goalFlOz } = useWaterShaderUniforms();
   const active = useScreenActive();
@@ -55,15 +51,11 @@ export default function HomeScreen() {
   const pet = useValue(currentPet$);
 
   // DEV only: long-press the pet to cycle through moods (see lib/dev/pet-preview.ts).
-  const [devMood, setDevMood] = useState<PetMood | null>(
-    __DEV__ ? DEV_START_MOOD : null,
-  );
+  const [devMood, setDevMood] = useState<PetMood | null>(__DEV__ ? DEV_START_MOOD : null);
   const preview = __DEV__ ? devMood : null;
   const cycleDevMood = () => {
     const i = devMood ? DEV_PREVIEW_MOODS.indexOf(devMood) : -1;
-    setDevMood(
-      i + 1 < DEV_PREVIEW_MOODS.length ? DEV_PREVIEW_MOODS[i + 1] : null,
-    );
+    setDevMood(i + 1 < DEV_PREVIEW_MOODS.length ? DEV_PREVIEW_MOODS[i + 1] : null);
   };
 
   // Until today's water has loaded, the pace mood is meaningless (it would read as parched on a
@@ -71,11 +63,7 @@ export default function HomeScreen() {
   const holdNeutral = loading && pet.kind === "alive" && !preview;
   const mood: PetMood = preview ?? (holdNeutral ? "content" : pet.mood);
   const petName =
-    pet.kind === "alive"
-      ? pet.pet.name
-      : preview && preview !== "egg"
-        ? "Mochi"
-        : null;
+    pet.kind === "alive" ? pet.pet.name : preview && preview !== "egg" ? "Mochi" : null;
   const streak = preview ? (preview === "egg" ? 0 : 12) : pet.currentStreak;
 
   // Goal crossing → confetti; any increase → the pet drinks.
@@ -101,8 +89,7 @@ export default function HomeScreen() {
   const unitLabel = formatVolumeLabel(unit);
   const fmt = (flOz: number) => formatAmountValue(flOz, unit);
   const fraction = goalFlOz > 0 ? Math.min(1, water / goalFlOz) : 0;
-  const behindFlOz =
-    pet.kind === "alive" ? Math.max(0, pet.pace.expectedFlOz - water) : 0;
+  const behindFlOz = pet.kind === "alive" ? Math.max(0, pet.pace.expectedFlOz - water) : 0;
   const line = holdNeutral
     ? "Checking today's water…"
     : moodLine({
@@ -115,19 +102,33 @@ export default function HomeScreen() {
   const { log, saving } = useLogWater();
 
   const nowMs = useValue(now$);
+  const trackingSince = useValue(streakState$.trackingSince);
+  const judgedThrough = useValue(streakState$.judgedThrough);
+  const graves = useValue(streakState$.graveyard);
   const week = useMemo(() => {
     const now = new Date(nowMs);
     const today = toDayKey(now);
-    // DEV preview: a 12-day pet counted through today, or the egg; otherwise the real pet's run.
-    const run = preview
-      ? preview === "egg"
-        ? null
-        : { hatchedOn: addDaysToKey(today, -11), lastCountedDay: today }
-      : pet.kind === "alive"
-        ? pet.pet
-        : null;
-    return weekStrip({ now, pet: run, todayFraction: fraction });
-  }, [nowMs, preview, pet, fraction]);
+    if (preview) {
+      // DEV preview: a 12-day pet counted through today (tracked for a month), or a fresh egg.
+      const egg = preview === "egg";
+      return weekStrip({
+        now,
+        pet: egg ? null : { hatchedOn: addDaysToKey(today, -11), lastCountedDay: today },
+        graves: [],
+        trackingSince: egg ? today : addDaysToKey(today, -30),
+        judgedThrough: egg ? null : lastFinalDay(now),
+        todayFraction: fraction,
+      });
+    }
+    return weekStrip({
+      now,
+      pet: pet.kind === "alive" ? pet.pet : null,
+      graves,
+      trackingSince,
+      judgedThrough,
+      todayFraction: fraction,
+    });
+  }, [nowMs, preview, pet, graves, trackingSince, judgedThrough, fraction]);
 
   return (
     <>
@@ -155,10 +156,10 @@ export default function HomeScreen() {
             week={week}
             ink={ink}
             inkMuted={inkMuted}
-            track={
+            colors={
               scheme === "light"
-                ? "rgba(13,40,64,0.16)"
-                : "rgba(255,255,255,0.18)"
+                ? { full: "#1E7EC8", partial: "#5FA8DE", track: "rgba(13,40,64,0.16)" }
+                : { full: "#4FB8E8", partial: "#6FD3F0", track: "rgba(255,255,255,0.18)" }
             }
           />
 
@@ -233,9 +234,7 @@ export default function HomeScreen() {
                 height: 6,
                 borderRadius: 3,
                 backgroundColor:
-                  scheme === "light"
-                    ? "rgba(13,40,64,0.12)"
-                    : "rgba(255,255,255,0.16)",
+                  scheme === "light" ? "rgba(13,40,64,0.12)" : "rgba(255,255,255,0.16)",
                 overflow: "hidden",
               }}
             >
@@ -245,11 +244,7 @@ export default function HomeScreen() {
                   height: "100%",
                   borderRadius: 3,
                   backgroundColor:
-                    fraction >= 1
-                      ? "#FF7FA5"
-                      : scheme === "light"
-                        ? "#1E7EC8"
-                        : "#6FD3F0",
+                    fraction >= 1 ? "#FF7FA5" : scheme === "light" ? "#1E7EC8" : "#6FD3F0",
                 }}
               />
             </View>
@@ -282,11 +277,7 @@ export default function HomeScreen() {
                   accessibilityLabel={`Log ${text}`}
                   accessibilityState={{ disabled: saving }}
                 >
-                  <GlassView
-                    glassEffectStyle="regular"
-                    isInteractive
-                    style={pill}
-                  >
+                  <GlassView glassEffectStyle="regular" isInteractive style={pill}>
                     <Text
                       style={[pillText, { color: ink }]}
                       numberOfLines={1}
@@ -311,12 +302,7 @@ export default function HomeScreen() {
                 tintColor="#0A84FF"
                 style={[pill, { width: PILL_H, paddingHorizontal: 0 }]}
               >
-                <SymbolView
-                  name="plus"
-                  size={20}
-                  weight="semibold"
-                  tintColor="#FFFFFF"
-                />
+                <SymbolView name="plus" size={20} weight="semibold" tintColor="#FFFFFF" />
               </GlassView>
             </Pressable>
           </GlassContainer>

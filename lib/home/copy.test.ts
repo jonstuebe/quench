@@ -31,14 +31,12 @@ describe("moodLine", () => {
     );
   });
   test("shortfall is shown in the display unit", () => {
-    expect(
-      moodLine({ ...base, unit: "ml", mood: "parched", behindFlOz: 10 }),
-    ).toBe("Mochi is parched — you're 296 ml behind");
+    expect(moodLine({ ...base, unit: "ml", mood: "parched", behindFlOz: 10 })).toBe(
+      "Mochi is parched — you're 296 ml behind",
+    );
   });
   test("happy", () => {
-    expect(moodLine({ ...base, mood: "happy", behindFlOz: 0 })).toBe(
-      "Mochi is happy and on pace",
-    );
+    expect(moodLine({ ...base, mood: "happy", behindFlOz: 0 })).toBe("Mochi is happy and on pace");
   });
   test("content", () => {
     expect(moodLine({ ...base, mood: "content", behindFlOz: 3 })).toBe(
@@ -66,9 +64,9 @@ describe("moodLine", () => {
     );
   });
   test("cups round to the nearest quarter", () => {
-    expect(
-      moodLine({ ...base, unit: "cup", mood: "thirsty", behindFlOz: 11 }),
-    ).toBe("Mochi is getting thirsty — you're 1.5 cups behind");
+    expect(moodLine({ ...base, unit: "cup", mood: "thirsty", behindFlOz: 11 })).toBe(
+      "Mochi is getting thirsty — you're 1.5 cups behind",
+    );
   });
   test("pints round to the nearest quarter", () => {
     expect(
@@ -82,9 +80,7 @@ describe("moodLine", () => {
     ).toBe("Last chance! Drink 1.25 pints before midnight to keep Mochi");
   });
   test("content with a shortfall that rounds to zero reads as on pace", () => {
-    expect(moodLine({ ...base, mood: "content", behindFlOz: 0.3 })).toBe(
-      "Mochi is right on pace",
-    );
+    expect(moodLine({ ...base, mood: "content", behindFlOz: 0.3 })).toBe("Mochi is right on pace");
   });
   test("thirsty with a shortfall that rounds to zero is just a sip behind", () => {
     expect(moodLine({ ...base, mood: "thirsty", behindFlOz: 0.3 })).toBe(
@@ -107,8 +103,8 @@ describe("moodLine", () => {
     ).toBe("Last chance! Just a sip more before midnight to keep Mochi");
   });
   test("an unnamed pet is 'Your axolotl'", () => {
-    expect(
-      moodLine({ ...base, name: null, mood: "happy", behindFlOz: 0 }),
-    ).toBe("Your axolotl is happy and on pace");
+    expect(moodLine({ ...base, name: null, mood: "happy", behindFlOz: 0 })).toBe(
+      "Your axolotl is happy and on pace",
+    );
   });
 });

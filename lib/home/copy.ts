@@ -26,19 +26,11 @@ export type MoodLineInput = {
 };
 
 /** One short sentence under the progress readout. */
-export function moodLine({
-  mood,
-  name,
-  unit,
-  behindFlOz,
-  remainingFlOz,
-}: MoodLineInput): string {
+export function moodLine({ mood, name, unit, behindFlOz, remainingFlOz }: MoodLineInput): string {
   const amount = (flOz: number) => formatAmount(flOz, unit);
   const pet = name ?? "Your axolotl";
-  const behind =
-    roundedDisplay(behindFlOz, unit) > 0 ? amount(behindFlOz) : null;
-  const remaining =
-    roundedDisplay(remainingFlOz, unit) > 0 ? amount(remainingFlOz) : null;
+  const behind = roundedDisplay(behindFlOz, unit) > 0 ? amount(behindFlOz) : null;
+  const remaining = roundedDisplay(remainingFlOz, unit) > 0 ? amount(remainingFlOz) : null;
   if (!behind && mood === "content") return `${pet} is right on pace`;
   switch (mood) {
     case "egg":

@@ -3,23 +3,23 @@ import { SymbolView } from "expo-symbols";
 import { Text, View } from "react-native";
 
 import { Fonts } from "@/constants/theme";
-import { weekStripLabel, type WeekDay, type WeekStrip } from "@/lib/home/week";
+import { dropLevel, weekStripLabel, type WeekDay, type WeekStrip } from "@/lib/home/week";
 
-const WATER = "#4FB8E8";
-const WATER_LIGHT = "#6FD3F0";
 const DROP = 24;
+
+/** Drop colours: `full` for counted days, `partial` for today's in-progress level. */
+export type DropColors = { full: string; partial: string; track: string };
 
 type Props = {
   streak: number;
   week: WeekStrip;
   ink: string;
   inkMuted: string;
-  /** Empty-drop color (differs between light and dark backdrops). */
-  track: string;
+  colors: DropColors;
 };
 
 /** Streak count + the last 7 days as water drops that fill from the bottom. One a11y element. */
-export function WeekStreak({ streak, week, ink, inkMuted, track }: Props) {
+export function WeekStreak({ streak, week, ink, inkMuted, colors }: Props) {
   return (
     <GlassView
       glassEffectStyle="regular"
@@ -33,7 +33,7 @@ export function WeekStreak({ streak, week, ink, inkMuted, track }: Props) {
         gap: 14,
       }}
       accessible
-      accessibilityLabel={weekStripLabel(streak, week.metCount)}
+      accessibilityLabel={weekStripLabel(streak, week)}
     >
       <View style={{ alignItems: "center", minWidth: 32 }}>
         <Text
@@ -59,7 +59,7 @@ export function WeekStreak({ streak, week, ink, inkMuted, track }: Props) {
       <View style={{ flexDirection: "row", gap: 8 }}>
         {week.days.map((d) => (
           <View key={d.key} style={{ alignItems: "center", gap: 4 }}>
-            <Drop day={d} track={track} />
+            <Drop day={d} colors={colors} />
             <Text
               style={{
                 fontSize: 10,
@@ -77,20 +77,20 @@ export function WeekStreak({ streak, week, ink, inkMuted, track }: Props) {
   );
 }
 
-function Drop({ day, track }: { day: WeekDay; track: string }) {
+function Drop({ day, colors }: { day: WeekDay; colors: DropColors }) {
   const outlined = day.isToday || day.status === "pending";
   return (
     <View
       style={{
         width: DROP,
         height: DROP,
-        opacity: day.status === "prehatch" ? 0.4 : 1,
+        opacity: day.status === "prehatch" || day.status === "untracked" ? 0.4 : 1,
       }}
     >
       <SymbolView
         name={outlined ? "drop" : "drop.fill"}
         size={DROP}
-        tintColor={day.isToday ? WATER_LIGHT : track}
+        tintColor={day.isToday ? colors.partial : colors.track}
       />
       {day.fill > 0 ? (
         <View
@@ -99,7 +99,7 @@ function Drop({ day, track }: { day: WeekDay; track: string }) {
             left: 0,
             right: 0,
             bottom: 0,
-            height: DROP * day.fill,
+            height: DROP * dropLevel(day.fill),
             overflow: "hidden",
           }}
         >
@@ -107,7 +107,7 @@ function Drop({ day, track }: { day: WeekDay; track: string }) {
             <SymbolView
               name="drop.fill"
               size={DROP}
-              tintColor={day.fill >= 1 ? WATER : WATER_LIGHT}
+              tintColor={day.met ? colors.full : colors.partial}
             />
           </View>
         </View>
