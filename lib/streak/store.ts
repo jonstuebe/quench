@@ -13,6 +13,12 @@ import { prefs$ } from "@/lib/prefs";
 
 import type { DayKey } from "./day";
 import { initialStreakState, normalizeStreakState, type StreakState } from "./evaluate";
+import {
+  applyNameOverrides,
+  normalizeNameOverrides,
+  renamePet,
+  type NameOverrides,
+} from "./rename";
 import { derivePetView } from "./view";
 
 const persistPlugin = observablePersistMMKV({ id: "quench-mmkv" });
@@ -22,6 +28,25 @@ export const streakState$ = observable<StreakState>({ ...initialStreakState });
 syncObservable(streakState$, { persist: { name: "quench-streak", plugin: persistPlugin } });
 // MMKV loads synchronously: normalize whatever was persisted (older/partial shapes).
 streakState$.set(normalizeStreakState(streakState$.peek()));
+
+/** User-chosen pet names by pet id; re-applied after every evaluation (see `rename.ts`). */
+export const petNameOverrides$ = observable<NameOverrides>({});
+syncObservable(petNameOverrides$, {
+  persist: { name: "quench-pet-names", plugin: persistPlugin },
+});
+petNameOverrides$.set(normalizeNameOverrides(petNameOverrides$.peek()));
+
+/** Write evaluated state, keeping any user-chosen names. */
+export function setStreakState(next: StreakState): void {
+  streakState$.set(applyNameOverrides(next, petNameOverrides$.peek()));
+}
+
+/** Rename the living pet (no-op for an egg). `name` must already be validated. */
+export function renameCurrentPet(name: string): void {
+  const result = renamePet(streakState$.peek(), petNameOverrides$.peek(), name);
+  petNameOverrides$.set(result.overrides);
+  streakState$.set(result.state);
+}
 
 /**
  * Goal in effect per day, recorded whenever the engine runs on that day (last write of the

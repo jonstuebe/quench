@@ -4,3 +4,4 @@ export * from "./mood";
 export * from "./names";
 export * from "./view";
 export * from "./goals";
+export * from "./rename";

@@ -17,7 +17,7 @@ import { AppState } from "react-native";
 import { addDaysToKey, daysBetween, toDayKey } from "./day";
 import { daysToFetch, evaluateStreak, normalizeStreakState } from "./evaluate";
 import { daysNeedingExercise, pruneGoalSnapshots, resolveGoals } from "./goals";
-import { goalSnapshots$, streakState$ } from "./store";
+import { goalSnapshots$, setStreakState, streakState$ } from "./store";
 
 /** Never fetch more than this many days of history in one evaluation. */
 const MAX_FETCH_DAYS = 400;
@@ -98,7 +98,7 @@ async function runOnce(now: Date) {
   });
 
   const next = evaluateStreak(state, { now, intakeByDay, goalByDay, fallbackGoalFlOz: goalToday });
-  streakState$.set(next);
+  setStreakState(next);
   goalSnapshots$.set(pruneGoalSnapshots(snapshots, next.judgedThrough));
 }
 
