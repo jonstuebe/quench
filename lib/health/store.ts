@@ -2,6 +2,7 @@ import { subscribeToChanges } from "@kingstinct/react-native-healthkit";
 import { observable, syncState } from "@legendapp/state";
 import { synced } from "@legendapp/state/sync";
 
+import { todayKey$ } from "@/lib/clock";
 import { HK_APPLE_EXERCISE_TIME, HK_BODY_MASS, HK_WATER } from "@/lib/health/ids";
 import { getWeightLb, sumExerciseMinutesForDay, sumWaterFlOzForDay } from "@/lib/health/queries";
 
@@ -10,6 +11,8 @@ export const todayWaterFlOz$ = observable(
     initial: 0,
     get: async () => {
       try {
+        // Reading todayKey$ makes this refetch when the local day rolls over.
+        todayKey$.get();
         return await sumWaterFlOzForDay(new Date());
       } catch {
         return 0;
@@ -31,6 +34,7 @@ export const todayExerciseMin$ = observable(
     initial: 0,
     get: async () => {
       try {
+        todayKey$.get();
         return await sumExerciseMinutesForDay(new Date());
       } catch {
         return 0;
