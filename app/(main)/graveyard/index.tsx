@@ -1,7 +1,8 @@
 import { GlassContainer, GlassView } from "expo-glass-effect";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
+import type { ListRenderItem } from "react-native";
 import { FlatList, PlatformColor, Pressable, Text, View } from "react-native";
 
 import { DuskBackdrop } from "@/components/graveyard/dusk-backdrop";
@@ -23,6 +24,14 @@ export default function GraveyardScreen() {
   const open = useCallback((id: string) => {
     router.push({ pathname: "/graveyard/[id]", params: { id } });
   }, []);
+  const renderItem = useCallback<ListRenderItem<Grave>>(
+    ({ item }) => <GraveRow grave={item} onPress={open} />,
+    [open],
+  );
+  const header = useMemo(
+    () => <Header graves={graves} longest={longest} pet={pet} />,
+    [graves, longest, pet],
+  );
 
   return (
     <View style={{ flex: 1 }}>
@@ -30,9 +39,9 @@ export default function GraveyardScreen() {
       <FlatList
         data={graves}
         keyExtractor={(g) => g.id}
-        renderItem={({ item }) => <GraveRow grave={item} onPress={open} />}
+        renderItem={renderItem}
         ItemSeparatorComponent={Gap}
-        ListHeaderComponent={<Header graves={graves} longest={longest} pet={pet} />}
+        ListHeaderComponent={header}
         ListEmptyComponent={EmptyMeadow}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32 }}
@@ -59,9 +68,11 @@ function Header({
   const stats = graveyardStats(graves, pet);
   const holderLine = holder
     ? holder.alive
-      ? `Held by ${holder.name}`
+      ? `Held by ${holder.name} · still going`
       : `Held by ${holder.name}`
-    : "Meet your goal to start one";
+    : longest <= 0
+      ? "Meet your goal to start one"
+      : null;
 
   return (
     <View style={{ gap: 12, marginBottom: graves.length ? 22 : 0 }}>
@@ -75,7 +86,7 @@ function Header({
           gap: 14,
         }}
         accessible
-        accessibilityLabel={`Longest streak: ${daysLabel(longest)}. ${holderLine}`}
+        accessibilityLabel={`Longest streak: ${daysLabel(longest)}${holderLine ? `. ${holderLine}` : ""}`}
       >
         <View
           style={{
@@ -108,12 +119,14 @@ function Header({
           >
             {daysLabel(longest)}
           </Text>
-          <Text
-            style={{ fontSize: 14, color: PlatformColor("secondaryLabel") }}
-            maxFontSizeMultiplier={1.6}
-          >
-            {holderLine}
-          </Text>
+          {holderLine ? (
+            <Text
+              style={{ fontSize: 14, color: PlatformColor("secondaryLabel") }}
+              maxFontSizeMultiplier={1.6}
+            >
+              {holderLine}
+            </Text>
+          ) : null}
         </View>
       </GlassView>
 
