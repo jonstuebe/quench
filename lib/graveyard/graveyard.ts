@@ -28,7 +28,7 @@ export function graveyardStats(
 
 /**
  * Who holds the longest streak. The living pet once it has matched the record; otherwise the
- * first grave (oldest) to reach it.
+ * grave that reached it first (earliest death), whatever the input order.
  */
 export function longestStreakHolder(
   longest: number,
@@ -37,7 +37,10 @@ export function longestStreakHolder(
 ): RecordHolder {
   if (longest <= 0) return null;
   if (pet && pet.streakLength >= longest) return { name: pet.name, alive: true };
-  const g = graves.find((x) => x.streakLength === longest);
+  let g: Grave | undefined;
+  for (const x of graves) {
+    if (x.streakLength === longest && (!g || x.diedOn < g.diedOn)) g = x;
+  }
   return g ? { name: g.name, alive: false } : null;
 }
 

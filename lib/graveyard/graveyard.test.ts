@@ -76,6 +76,8 @@ describe("longestStreakHolder", () => {
     const later = died(grave("Pickle", "2026-05-01", "2026-05-12", 12), "2026-05-13");
     const first = died(grave("Olive", "2026-02-01", "2026-02-12", 12), "2026-02-13");
     expect(longestStreakHolder(12, [first, later], null)?.name).toBe("Olive");
+    // Order-agnostic: the list may already be sorted newest first.
+    expect(longestStreakHolder(12, [later, first], null)?.name).toBe("Olive");
   });
   test("the living pet holds it once it has matched the record", () => {
     expect(longestStreakHolder(12, [mochi], { name: "Dumpling", streakLength: 12 })).toEqual({
@@ -93,9 +95,7 @@ describe("formatLifespan", () => {
     expect(formatLifespan("2026-09-02", "2026-09-14", "en-US")).toBe("Sep 2 – Sep 14, 2026");
   });
   test("a year-crossing life shows both years", () => {
-    expect(formatLifespan("2025-12-28", "2026-01-03", "en-US")).toBe(
-      "Dec 28, 2025 – Jan 3, 2026",
-    );
+    expect(formatLifespan("2025-12-28", "2026-01-03", "en-US")).toBe("Dec 28, 2025 – Jan 3, 2026");
   });
   test("a one-day life is a single date", () => {
     expect(formatLifespan("2026-03-08", "2026-03-08", "en-US")).toBe("Mar 8, 2026");
@@ -133,9 +133,12 @@ describe("graveAccessibilityLabel", () => {
     expect(graveAccessibilityLabel(mochi, "en-US")).toBe(
       "Mochi, lived 12 days, September 2 to September 13, 2026",
     );
-    expect(graveAccessibilityLabel(died(grave("Bit", "2026-03-08", "2026-03-08", 1), "2026-03-09"), "en-US")).toBe(
-      "Bit, lived 1 day, March 8, 2026",
-    );
+    expect(
+      graveAccessibilityLabel(
+        died(grave("Bit", "2026-03-08", "2026-03-08", 1), "2026-03-09"),
+        "en-US",
+      ),
+    ).toBe("Bit, lived 1 day, March 8, 2026");
   });
 });
 
