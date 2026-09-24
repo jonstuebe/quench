@@ -69,7 +69,8 @@
       "expo-image",
       "expo-web-browser",
       "expo-updates",
-      "@bacons/apple-targets"
+      "@bacons/apple-targets",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true,

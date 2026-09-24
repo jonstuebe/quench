@@ -5,7 +5,7 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { dayDate$, refreshDayMetrics } from "@/lib/health/store";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router/react-navigation";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { format, isAfter, parseISO, startOfDay } from "date-fns";
 import { useCallback, useMemo } from "react";

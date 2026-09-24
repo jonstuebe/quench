@@ -14,7 +14,7 @@ import {
 import { sumWaterUntilWallClock } from "@/lib/health/queries";
 import { prefs$ } from "@/lib/prefs";
 import { flOzToDisplay, formatVolumeLabel } from "@/lib/volume";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router/react-navigation";
 import {
   eachDayOfInterval,
   endOfMonth,
