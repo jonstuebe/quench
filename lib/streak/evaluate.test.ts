@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import { daysToFetch, evaluateStreak, initialStreakState, type StreakState } from "./evaluate";
+import {
+  daysToFetch,
+  evaluateStreak,
+  initialStreakState,
+  normalizeStreakState,
+  type StreakState,
+} from "./evaluate";
 import { AXOLOTL_NAMES } from "./names";
 import { dayKeyToDate } from "./day";
 
@@ -24,6 +30,7 @@ const installedOn = (day: string) => run(initialStreakState, day, {});
 describe("first launch", () => {
   test("nothing drunk yet is an egg", () => {
     expect(installedOn("2026-09-24")).toEqual({
+      version: 1,
       trackingSince: "2026-09-24",
       judgedThrough: null,
       pet: null,
@@ -433,5 +440,51 @@ describe("judge grace period (a day is final at 04:00 the next morning)", () => 
     const after = runAt(before, new Date(2026, 8, 3, 4, 0), intake);
     expect(after).toEqual(runAt(twoDayPet(), new Date(2026, 8, 3, 4, 0), intake));
     expect(runAt(after, new Date(2026, 8, 3, 4, 0), intake)).toEqual(after);
+  });
+});
+
+describe("normalizeStreakState (tolerant load)", () => {
+  test("nothing persisted yields the initial v1 state", () => {
+    expect(normalizeStreakState(undefined)).toEqual({
+      version: 1,
+      trackingSince: null,
+      judgedThrough: null,
+      pet: null,
+      graveyard: [],
+      longestStreak: 0,
+    });
+  });
+
+  test("a pre-version shape keeps its data and gains defaults", () => {
+    const pet = {
+      id: "a",
+      name: "Mochi",
+      hatchedOn: "2026-09-01",
+      lastCountedDay: "2026-09-02",
+      streakLength: 2,
+    };
+    expect(
+      normalizeStreakState({ trackingSince: "2026-09-01", judgedThrough: "2026-09-01", pet }),
+    ).toEqual({
+      version: 1,
+      trackingSince: "2026-09-01",
+      judgedThrough: "2026-09-01",
+      pet,
+      graveyard: [],
+      longestStreak: 0,
+    });
+  });
+
+  test("wrongly typed fields fall back to defaults", () => {
+    expect(
+      normalizeStreakState({ graveyard: "x", longestStreak: "5", pet: 3, trackingSince: 7 }),
+    ).toEqual({
+      version: 1,
+      trackingSince: null,
+      judgedThrough: null,
+      pet: null,
+      graveyard: [],
+      longestStreak: 0,
+    });
   });
 });

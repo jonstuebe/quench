@@ -16,7 +16,11 @@ export type Grave = {
   diedOn: DayKey;
   streakLength: number;
 };
+export const STREAK_STATE_VERSION = 1;
+
 export type StreakState = {
+  /** Persisted-shape version for future migrations. */
+  version: typeof STREAK_STATE_VERSION;
   trackingSince: DayKey | null;
   judgedThrough: DayKey | null;
   pet: Pet | null;
@@ -24,6 +28,7 @@ export type StreakState = {
   longestStreak: number;
 };
 export const initialStreakState: StreakState = {
+  version: STREAK_STATE_VERSION,
   trackingSince: null,
   judgedThrough: null,
   pet: null,
@@ -99,7 +104,14 @@ export function evaluateStreak(state: StreakState, input: EvaluateInput): Streak
     (pet as Pet | null)?.streakLength ?? 0,
     ...graveyard.map((g) => g.streakLength),
   );
-  return { trackingSince, judgedThrough, pet, graveyard, longestStreak };
+  return {
+    version: STREAK_STATE_VERSION,
+    trackingSince,
+    judgedThrough,
+    pet,
+    graveyard,
+    longestStreak,
+  };
 }
 
 /**
@@ -129,4 +141,21 @@ export function daysToFetch(state: StreakState, today: DayKey): { from: DayKey; 
     ? addDaysToKey(state.judgedThrough, 1)
     : (state.trackingSince ?? today);
   return { from, to: today };
+}
+
+/**
+ * Tolerant load of persisted state: missing or wrongly typed fields get defaults, and the
+ * result is stamped with the current version. Future migrations branch on `raw.version` here.
+ */
+export function normalizeStreakState(raw: unknown): StreakState {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const dayOrNull = (v: unknown) => (typeof v === "string" ? v : null);
+  return {
+    version: STREAK_STATE_VERSION,
+    trackingSince: dayOrNull(r.trackingSince),
+    judgedThrough: dayOrNull(r.judgedThrough),
+    pet: r.pet && typeof r.pet === "object" ? (r.pet as Pet) : null,
+    graveyard: Array.isArray(r.graveyard) ? (r.graveyard as Grave[]) : [],
+    longestStreak: typeof r.longestStreak === "number" ? r.longestStreak : 0,
+  };
 }
