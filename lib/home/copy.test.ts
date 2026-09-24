@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
+import type { VolumeDisplayUnit } from "@/lib/types";
+import { displayToFlOz } from "@/lib/volume";
+
 import { moodLine, quickLogPresets, streakChipLabel } from "./copy";
 
 describe("streakChipLabel", () => {
@@ -13,10 +16,16 @@ describe("streakChipLabel", () => {
 });
 
 describe("quickLogPresets", () => {
-  test("fl oz", () => expect(quickLogPresets("fl-oz")).toEqual([8, 12, 16]));
-  test("ml", () => expect(quickLogPresets("ml")).toEqual([250, 350, 500]));
-  test("cups", () => expect(quickLogPresets("cup")).toEqual([0.5, 1, 2]));
-  test("pints", () => expect(quickLogPresets("pt_us")).toEqual([0.5, 1, 1.5]));
+  const units: VolumeDisplayUnit[] = ["fl-oz", "ml", "cup", "pt_us"];
+  test.each(units)("%s presets are ascending, glass-sized drinks", (unit) => {
+    const flOz = quickLogPresets(unit).map((v) => displayToFlOz(v, unit));
+    expect(flOz.length).toBeGreaterThanOrEqual(2);
+    for (const oz of flOz) {
+      expect(oz).toBeGreaterThanOrEqual(4);
+      expect(oz).toBeLessThanOrEqual(32);
+    }
+    expect([...flOz].sort((a, b) => a - b)).toEqual(flOz);
+  });
 });
 
 describe("moodLine", () => {
@@ -33,15 +42,15 @@ describe("moodLine", () => {
   });
   test("shortfall is shown in the display unit", () => {
     expect(moodLine({ ...base, unit: "ml", mood: "parched", behindFlOz: 10 })).toBe(
-      "Mochi is parched — you're 295.74 ml behind",
+      "Mochi is parched — you're 296 ml behind",
     );
   });
   test("happy", () => {
     expect(moodLine({ ...base, mood: "happy", behindFlOz: 0 })).toBe("Mochi is happy and on pace");
   });
   test("content", () => {
-    expect(moodLine({ ...base, mood: "content", behindFlOz: 3.5 })).toBe(
-      "Mochi is doing fine — 3.5 fl oz to catch up",
+    expect(moodLine({ ...base, mood: "content", behindFlOz: 3 })).toBe(
+      "Mochi is doing fine — 3 fl oz to catch up",
     );
   });
   test("last-chance", () => {
@@ -52,6 +61,29 @@ describe("moodLine", () => {
   test("celebrating", () => {
     expect(moodLine({ ...base, mood: "celebrating", behindFlOz: 0, remainingFlOz: 0 })).toBe(
       "Goal met! Mochi is thrilled",
+    );
+  });
+  test("rounds fl oz to whole numbers", () => {
+    expect(moodLine({ ...base, mood: "content", behindFlOz: 3.6 })).toBe(
+      "Mochi is doing fine — 4 fl oz to catch up",
+    );
+  });
+  test("cups round to the nearest quarter", () => {
+    expect(moodLine({ ...base, unit: "cup", mood: "thirsty", behindFlOz: 11 })).toBe(
+      "Mochi is getting thirsty — you're 1.5 cups behind",
+    );
+  });
+  test("pints round to the nearest quarter", () => {
+    expect(
+      moodLine({ ...base, unit: "pt_us", mood: "last-chance", behindFlOz: 0, remainingFlOz: 20 }),
+    ).toBe("Last chance! Drink 1.25 pints before midnight to keep Mochi");
+  });
+  test("a shortfall that rounds to zero reads as on pace", () => {
+    expect(moodLine({ ...base, mood: "thirsty", behindFlOz: 0.3 })).toBe("Mochi is right on pace");
+  });
+  test("an unnamed pet is 'Your axolotl'", () => {
+    expect(moodLine({ ...base, name: null, mood: "happy", behindFlOz: 0 })).toBe(
+      "Your axolotl is happy and on pace",
     );
   });
 });

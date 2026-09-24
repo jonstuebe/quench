@@ -23,6 +23,8 @@ import { Egg } from "./egg";
 import { VIEWBOX } from "./geometry";
 
 const HATCH_MS = 1700;
+/** Starting targets while still an egg, so the hatchling eases in from a happy baseline. */
+const HATCHLING = moodVisuals("happy")!;
 const MOOD_EASE = { duration: 900, easing: Easing.inOut(Easing.cubic) };
 
 type Props = {
@@ -40,7 +42,7 @@ type Props = {
 export function AxolotlPet({ mood, name, size, drinkToken }: Props) {
   const reduced = useReducedMotion();
   const isEgg = mood === "egg";
-  const v = moodVisuals(isEgg ? "happy" : mood);
+  const v = moodVisuals(mood) ?? HATCHLING;
 
   const phase = useSharedValue(0);
   const tempo = useSharedValue(isEgg ? 1 : v.tempo);
@@ -75,6 +77,7 @@ export function AxolotlPet({ mood, name, size, drinkToken }: Props) {
   useEffect(() => {
     if (isEgg) return;
     const t = moodVisuals(mood);
+    if (!t) return;
     tempo.value = withTiming(t.tempo, MOOD_EASE);
     m.gillDroop.value = withTiming(t.gillDroop, MOOD_EASE);
     m.saturation.value = withTiming(t.saturation, MOOD_EASE);

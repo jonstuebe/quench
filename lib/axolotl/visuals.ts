@@ -94,8 +94,9 @@ const VISUALS: Record<Mood, MoodVisuals> = {
   },
 };
 
-export function moodVisuals(mood: Mood): MoodVisuals {
-  return VISUALS[mood];
+/** Drawing targets for a living mood; `null` for the egg (nothing axolotl-shaped to draw). */
+export function moodVisuals(mood: PetMood): MoodVisuals | null {
+  return mood === "egg" ? null : VISUALS[mood];
 }
 
 const MOOD_WORDS: Record<Mood, string> = {

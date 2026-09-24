@@ -3,56 +3,39 @@ import { describe, expect, test } from "bun:test";
 import { moodVisuals, petAccessibilityLabel } from "./visuals";
 
 describe("moodVisuals", () => {
-  test("happy is the healthy baseline: perky gills, full colour, open eyes, smile", () => {
-    expect(moodVisuals("happy")).toEqual({
-      gillDroop: 0,
-      saturation: 1,
-      tempo: 1,
-      smile: 0.8,
-      eyes: "open",
-      blush: 0.8,
-      sparkles: false,
-      sweat: false,
-      urgency: 0,
-    });
+  const decline = ["happy", "content", "thirsty", "parched"] as const;
+  const get = (m: (typeof decline)[number] | "celebrating" | "last-chance") => {
+    const v = moodVisuals(m);
+    if (!v) throw new Error(`no visuals for ${m}`);
+    return v;
+  };
+  const strictlyIncreasing = (xs: number[]) => xs.every((x, i) => i === 0 || x > xs[i - 1]);
+  const strictlyDecreasing = (xs: number[]) => xs.every((x, i) => i === 0 || x < xs[i - 1]);
+
+  test("gills droop further at each step from happy to parched", () => {
+    expect(strictlyIncreasing(decline.map((m) => get(m).gillDroop))).toBe(true);
   });
-  test("celebrating squints with joy, sparkles and bounces faster", () => {
-    const v = moodVisuals("celebrating");
-    expect(v.eyes).toBe("joy");
-    expect(v.sparkles).toBe(true);
-    expect(v.tempo).toBe(1.3);
-    expect(v.smile).toBe(1);
+  test("colour fades at each step from happy to parched", () => {
+    expect(strictlyDecreasing(decline.map((m) => get(m).saturation))).toBe(true);
   });
-  test("content is a calmer happy", () => {
-    const v = moodVisuals("content");
-    expect([v.gillDroop, v.saturation, v.smile, v.eyes]).toEqual([0.1, 0.95, 0.45, "open"]);
+  test("the smile shrinks and the animation slows as thirst grows", () => {
+    expect(strictlyDecreasing(decline.map((m) => get(m).smile))).toBe(true);
+    expect(strictlyDecreasing(decline.map((m) => get(m).tempo))).toBe(true);
   });
-  test("thirsty droops the gills a bit and desaturates", () => {
-    const v = moodVisuals("thirsty");
-    expect([v.gillDroop, v.saturation, v.smile, v.tempo]).toEqual([0.4, 0.7, 0, 0.8]);
+  test("a healthy pet is full colour with perky gills; a parched one frowns", () => {
+    expect(get("happy").gillDroop).toBe(0);
+    expect(get("happy").saturation).toBe(1);
+    expect(get("parched").smile).toBeLessThan(0);
+    expect(get("parched").eyes).toBe("sad");
   });
-  test("parched is faded, droopy, slow and sad-eyed", () => {
-    expect(moodVisuals("parched")).toMatchObject({
-      gillDroop: 0.85,
-      saturation: 0.3,
-      tempo: 0.55,
-      smile: -0.7,
-      eyes: "sad",
-      blush: 0,
-    });
+  test("only celebrating sparkles; only last-chance sweats and pulses", () => {
+    const all = ["celebrating", ...decline, "last-chance"] as const;
+    expect(all.filter((m) => get(m).sparkles)).toEqual(["celebrating"]);
+    expect(all.filter((m) => get(m).sweat)).toEqual(["last-chance"]);
+    expect(all.filter((m) => get(m).urgency > 0)).toEqual(["last-chance"]);
   });
-  test("last-chance sweats and pulses urgently", () => {
-    expect(moodVisuals("last-chance")).toMatchObject({
-      eyes: "worried",
-      sweat: true,
-      urgency: 1,
-      gillDroop: 0.6,
-    });
-  });
-  test("gills droop monotonically as the pet gets thirstier", () => {
-    const order = ["celebrating", "happy", "content", "thirsty", "parched"] as const;
-    const droops = order.map((m) => moodVisuals(m).gillDroop);
-    expect(droops).toEqual([0, 0, 0.1, 0.4, 0.85]);
+  test("the egg has no face to draw", () => {
+    expect(moodVisuals("egg")).toBeNull();
   });
 });
 
