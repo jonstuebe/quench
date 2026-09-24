@@ -21,7 +21,6 @@
     "@expo/ui": "~57.0.20",
     "@kingstinct/react-native-healthkit": "^13.3.1",
     "@legendapp/state": "3.0.0-beta.46",
-    "@react-native-community/datetimepicker": "9.1.0",
     "@react-native-picker/picker": "2.11.4",
     "@shopify/react-native-skia": "2.6.2",
     "convert-units": "^2.3.4",
