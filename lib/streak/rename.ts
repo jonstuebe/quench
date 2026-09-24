@@ -12,10 +12,10 @@ export const PET_NAME_MAX_LENGTH = 20;
 
 export type PetNameResult = { ok: true; name: string } | { ok: false; error: "empty" | "tooLong" };
 
-/** Trim, collapse inner whitespace, and require 1–20 characters (emoji count as one). */
+/** Trim, collapse inner whitespace, and require 1–20 user-perceived characters. */
 export function validatePetName(raw: string): PetNameResult {
   const name = raw.trim().replace(/\s+/g, " ");
-  const length = [...name].length;
+  const length = countCharacters(name);
   if (length === 0) return { ok: false, error: "empty" };
   if (length > PET_NAME_MAX_LENGTH) return { ok: false, error: "tooLong" };
   return { ok: true, name };
@@ -60,4 +60,35 @@ export function normalizeNameOverrides(raw: unknown): NameOverrides {
   const out: NameOverrides = {};
   for (const [k, v] of Object.entries(raw)) if (typeof v === "string") out[k] = v;
   return out;
+}
+
+const hasSegmenter = typeof Intl !== "undefined" && typeof Intl.Segmenter === "function";
+
+/**
+ * User-perceived characters: grapheme clusters via `Intl.Segmenter` (a ZWJ family or a flag is
+ * one), falling back to code points where the engine lacks it (older Hermes).
+ */
+export function countCharacters(s: string, useSegmenter: boolean = hasSegmenter): number {
+  if (!useSegmenter) return [...s].length;
+  let n = 0;
+  for (const _ of new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(s)) n++;
+  return n;
+}
+
+/**
+ * Drop names for pets that are gone for good: not the living pet, not buried, and not a
+ * tentative hatch after `judgedThrough` that an undone drink rewound (it re-hatches with the
+ * same id, so its name must survive). Returns `overrides` itself when nothing is dropped.
+ */
+export function pruneNameOverrides(state: StreakState, overrides: NameOverrides): NameOverrides {
+  const keep = new Set(state.graveyard.map((g) => g.id));
+  if (state.pet) keep.add(state.pet.id);
+  const stillTentative = (id: string) => {
+    const day = id.split("#")[0] ?? "";
+    return state.judgedThrough === null || day > state.judgedThrough;
+  };
+  const ids = Object.keys(overrides);
+  const kept = ids.filter((id) => keep.has(id) || stillTentative(id));
+  if (kept.length === ids.length) return overrides;
+  return Object.fromEntries(kept.map((id) => [id, overrides[id]!]));
 }

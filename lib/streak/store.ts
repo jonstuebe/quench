@@ -16,6 +16,7 @@ import { initialStreakState, normalizeStreakState, type StreakState } from "./ev
 import {
   applyNameOverrides,
   normalizeNameOverrides,
+  pruneNameOverrides,
   renamePet,
   type NameOverrides,
 } from "./rename";
@@ -38,7 +39,11 @@ petNameOverrides$.set(normalizeNameOverrides(petNameOverrides$.peek()));
 
 /** Write evaluated state, keeping any user-chosen names. */
 export function setStreakState(next: StreakState): void {
-  streakState$.set(applyNameOverrides(next, petNameOverrides$.peek()));
+  const overrides = petNameOverrides$.peek();
+  const named = applyNameOverrides(next, overrides);
+  streakState$.set(named);
+  const pruned = pruneNameOverrides(named, overrides);
+  if (pruned !== overrides) petNameOverrides$.set(pruned);
 }
 
 /** Rename the living pet (no-op for an egg). `name` must already be validated. */
