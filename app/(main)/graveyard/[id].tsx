@@ -4,7 +4,7 @@ import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import { Fragment } from "react";
 import { PlatformColor, ScrollView, Text, View } from "react-native";
 
-import { GhostAxolotl } from "@/components/axolotl/ghost-axolotl";
+import { FloatingGhost } from "@/components/axolotl/ghost-axolotl";
 import { DuskBackdrop } from "@/components/graveyard/dusk-backdrop";
 import { Fonts } from "@/constants/theme";
 import { useGraveyard } from "@/hooks/use-graveyard";
@@ -52,7 +52,7 @@ export default function GraveDetailScreen() {
           accessible
           accessibilityLabel={`${grave.name}, lived ${daysLabel(grave.streakLength)}, ${lifespanSpoken(grave.hatchedOn, grave.lastCountedDay)}. ${epitaphFor(grave.id)}`}
         >
-          <GhostAxolotl streakLength={grave.streakLength} size={220} float />
+          <FloatingGhost streakLength={grave.streakLength} size={220} />
           <Text
             style={{
               fontFamily: Fonts.rounded,

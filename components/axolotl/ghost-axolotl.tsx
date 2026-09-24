@@ -3,7 +3,7 @@
  * eyes closed, still), tinted a cool moonlit blue, translucent, with a halo.
  *
  * Static by default: no frame callback and no timers, so a long list of graves costs one
- * paint per canvas. Pass `float` for a single hero ghost that drifts gently.
+ * paint per canvas. `FloatingGhost` is the single hero ghost that drifts gently.
  */
 import {
   BlurMask,
@@ -14,9 +14,16 @@ import {
   Oval,
   Paint,
 } from "@shopify/react-native-skia";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { View } from "react-native";
-import { useFrameCallback, useReducedMotion, useSharedValue } from "react-native-reanimated";
+import {
+  makeMutable,
+  useFrameCallback,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from "react-native-reanimated";
 
 import { ghostVisuals } from "@/lib/axolotl/visuals";
 
@@ -31,43 +38,56 @@ const GHOST_TINT = [
 const HALO = "#FFE9A8";
 const AURA = "#BFD8FF";
 
-type Props = {
-  streakLength: number;
-  size: number;
-  /** Gently drift (detail screen only). Honours Reduce Motion. */
-  float?: boolean;
-};
+type Props = { streakLength: number; size: number };
 
-export function GhostAxolotl({ streakLength, size, float = false }: Props) {
-  const v = ghostVisuals(streakLength);
-  const reduced = useReducedMotion();
-  const animate = float && !reduced;
-
-  const phase = useSharedValue(0);
-  const m: AxolotlMotion = {
-    phase,
-    amp: useSharedValue(animate ? 0.8 : 0),
-    gillDroop: useSharedValue(v.gillDroop),
-    saturation: useSharedValue(v.saturation),
-    smile: useSharedValue(v.smile),
-    blush: useSharedValue(v.blush),
-    sparkle: useSharedValue(0),
-    sweat: useSharedValue(0),
-    urgency: useSharedValue(0),
-    drink: useSharedValue(0),
-    blink: useSharedValue(1),
-    appear: useSharedValue(1),
+const GV = ghostVisuals(1);
+/** Motion inputs for `AxolotlBody`, all constant for a ghost except phase/amp. */
+function ghostMotion(mk: <T>(v: T) => SharedValue<T>): AxolotlMotion {
+  return {
+    phase: mk(0),
+    amp: mk(0),
+    gillDroop: mk(GV.gillDroop),
+    saturation: mk(GV.saturation),
+    smile: mk(GV.smile),
+    blush: mk(GV.blush),
+    sparkle: mk(0),
+    sweat: mk(0),
+    urgency: mk(0),
+    drink: mk(0),
+    blink: mk(1),
+    appear: mk(1),
   };
+}
+/** One frozen set shared by every static ghost: list rows allocate no shared values. */
+const STATIC_MOTION = ghostMotion(makeMutable);
+
+/** Still ghost for lists: no frame callback, no per-row shared values. */
+export function GhostAxolotl({ streakLength, size }: Props) {
+  return <GhostScene m={STATIC_MOTION} streakLength={streakLength} size={size} />;
+}
+
+/** Hero ghost (detail screen) that drifts gently; stills under Reduce Motion. */
+export function FloatingGhost({ streakLength, size }: Props) {
+  const reduced = useReducedMotion();
+  const phase = useSharedValue(0);
+  const amp = useSharedValue(reduced ? 0 : 0.8);
+  const [m] = useState(() => ({ ...STATIC_MOTION, phase, amp }));
 
   const clock = useFrameCallback((f) => {
     const dt = Math.min(0.05, (f.timeSincePreviousFrame ?? 16) / 1000);
     phase.value += dt * 0.45;
   }, false);
   useEffect(() => {
-    clock.setActive(animate);
+    amp.value = withTiming(reduced ? 0 : 0.8, { duration: 300 });
+    clock.setActive(!reduced);
     return () => clock.setActive(false);
-  }, [animate, clock]);
+  }, [reduced, clock, amp]);
 
+  return <GhostScene m={m} streakLength={streakLength} size={size} />;
+}
+
+function GhostScene({ m, streakLength, size }: Props & { m: AxolotlMotion }) {
+  const v = ghostVisuals(streakLength);
   const scale = size / VIEWBOX;
   return (
     <View style={{ width: size, height: size }} pointerEvents="none">
