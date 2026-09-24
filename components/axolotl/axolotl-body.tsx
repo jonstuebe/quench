@@ -27,6 +27,7 @@ import {
   GILL_SHAPES,
   GILLS,
   HEAD,
+  closedEyePath,
   joyEyePath,
   MOUTH_Y,
   SPARKLES,
@@ -100,10 +101,16 @@ const BROWS = [
 ];
 
 function Eye({ x, style, side }: { x: number; style: EyeStyle; side: -1 | 1 }) {
-  if (style === "joy") {
+  if (style === "joy" || style === "closed") {
     return (
       <Group transform={[{ translateX: x }, { translateY: EYE_Y }]}>
-        <Path path={joyEyePath} color={C.eye} style="stroke" strokeWidth={3.4} strokeCap="round" />
+        <Path
+          path={style === "joy" ? joyEyePath : closedEyePath}
+          color={C.eye}
+          style="stroke"
+          strokeWidth={3.4}
+          strokeCap="round"
+        />
       </Group>
     );
   }

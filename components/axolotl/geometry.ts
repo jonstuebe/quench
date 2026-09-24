@@ -83,6 +83,8 @@ export const sweatPath = svg(
 
 /** Joy "^" eye, centred on the eye position. */
 export const joyEyePath = svg("M-6.5 2.5 Q 0 -6.5 6.5 2.5");
+/** Peaceful closed eye (a gentle downward bow): the ghost's resting face. */
+export const closedEyePath = svg("M-7 -1 Q 0 6 7 -1");
 
 export const eggPath = svg(
   "M120 56 C 158 56 178 118 178 150 C 178 186 152 206 120 206 C 88 206 62 186 62 150 C 62 118 82 56 120 56 Z",
