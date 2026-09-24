@@ -13,7 +13,8 @@
     "lint:fix": "oxlint --fix .",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "check": "oxlint . && oxfmt --check ."
+    "check": "oxlint . && oxfmt --check .",
+    "test": "bun test"
   },
   "dependencies": {
     "@bacons/apple-targets": "^4.0.6",
