@@ -18,7 +18,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.jonstuebe.quench",
       "infoPlist": {
-        "UIBackgroundModes": ["fetch", "fetch"],
+        "UIBackgroundModes": ["fetch"],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
