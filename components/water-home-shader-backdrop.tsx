@@ -8,14 +8,8 @@ import { WaterWidgetBackground } from "./water-widget-background";
  */
 export function WaterHomeShaderBackdrop() {
   const { width, height } = useWindowDimensions();
-  const {
-    fillFraction,
-    colorTurquoise,
-    colorSapphire,
-    colorDeep,
-    colorAir,
-    loading,
-  } = useWaterShaderUniforms("today");
+  const { fillFraction, colorTurquoise, colorSapphire, colorDeep, colorAir, loading } =
+    useWaterShaderUniforms();
 
   if (width <= 0 || height <= 0) {
     return null;

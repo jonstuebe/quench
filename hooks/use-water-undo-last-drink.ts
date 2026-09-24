@@ -1,35 +1,23 @@
 import { isHealthUnauthorizedError } from "@/lib/health/errors";
-import {
-  deleteWaterSampleByUuid,
-  getLastDeletableWaterSampleForDay,
-} from "@/lib/health/queries";
-import {
-  dayDate$,
-  refreshDayMetrics,
-  refreshTodayMetrics,
-} from "@/lib/health/store";
-import type { WaterWidgetMode } from "@/hooks/use-water-shader-uniforms";
+import { deleteWaterSampleByUuid, getLastDeletableWaterSampleForDay } from "@/lib/health/queries";
+import { refreshTodayMetrics } from "@/lib/health/store";
+import { evaluateStreakNow } from "@/lib/streak/engine";
 import * as Haptics from "expo-haptics";
 import { format } from "date-fns";
 import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 
 export function useWaterUndoLastDrink({
-  mode,
   water,
   loading,
   /** When false, skip HealthKit checks (e.g. parent shows header undo instead). */
   enabled = true,
 }: {
-  mode: WaterWidgetMode;
   water: number;
   loading: boolean;
   enabled?: boolean;
 }) {
-  const undoDayKey = format(
-    mode === "today" ? new Date() : dayDate$.get(),
-    "yyyy-MM-dd",
-  );
+  const undoDayKey = format(new Date(), "yyyy-MM-dd");
   const [canUndoDeletable, setCanUndoDeletable] = useState(false);
 
   useEffect(() => {
@@ -40,8 +28,7 @@ export function useWaterUndoLastDrink({
     }
     void (async () => {
       try {
-        const d = mode === "today" ? new Date() : dayDate$.get();
-        const last = await getLastDeletableWaterSampleForDay(d);
+        const last = await getLastDeletableWaterSampleForDay(new Date());
         if (!cancelled) {
           setCanUndoDeletable(!!last?.uuid);
         }
@@ -52,21 +39,20 @@ export function useWaterUndoLastDrink({
     return () => {
       cancelled = true;
     };
-  }, [enabled, loading, water, mode, undoDayKey]);
+  }, [enabled, loading, water, undoDayKey]);
 
   const onUndo = useCallback(async () => {
     if (!enabled) return;
     try {
-      const d = mode === "today" ? new Date() : dayDate$.get();
-      const last = await getLastDeletableWaterSampleForDay(d);
+      const last = await getLastDeletableWaterSampleForDay(new Date());
       if (!last?.uuid) {
         setCanUndoDeletable(false);
         return;
       }
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await deleteWaterSampleByUuid(last.uuid);
-      if (mode === "today") await refreshTodayMetrics();
-      else await refreshDayMetrics();
+      await refreshTodayMetrics();
+      void evaluateStreakNow();
     } catch (e) {
       if (isHealthUnauthorizedError(e)) {
         Alert.alert(
@@ -75,7 +61,7 @@ export function useWaterUndoLastDrink({
         );
       }
     }
-  }, [enabled, mode]);
+  }, [enabled]);
 
   return { canUndo: canUndoDeletable, onUndo };
 }

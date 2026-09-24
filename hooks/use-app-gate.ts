@@ -15,7 +15,8 @@ export function useAppGate() {
     (async () => {
       try {
         await when(syncState(prefs$).isPersistLoaded);
-        if (healthKitAvailable()) {
+        // New users are asked on onboarding's Apple Health step instead of at launch.
+        if (healthKitAvailable() && prefs$.onboardingComplete.get()) {
           await ensureHealthKitAuthorization();
         }
       } catch {

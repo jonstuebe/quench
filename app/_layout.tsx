@@ -1,8 +1,4 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
+import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router/react-navigation";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
@@ -26,18 +22,10 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="device-not-supported"
-          options={{ title: "Quench" }}
-        />
+        <Stack.Screen name="device-not-supported" options={{ title: "Quench" }} />
         <Stack.Screen
           name="onboarding"
-          options={{
-            headerShown: true,
-            title: "Configure",
-            headerBackButtonDisplayMode: "minimal",
-            headerLargeTitle: true,
-          }}
+          options={{ headerShown: false, gestureEnabled: false, animation: "fade" }}
         />
         <Stack.Screen name="(main)" options={{ headerShown: false }} />
       </Stack>

@@ -10,11 +10,17 @@ import type { NotificationContentInput } from "expo-notifications";
 
 import type { TimeParts } from "@/lib/types";
 
-export async function setupNotifications() {
+/** Ask for permission if needed. Resolves to whether notifications are allowed. */
+export async function setupNotifications(): Promise<boolean> {
   const settings = await getPermissionsAsync();
-  if (!settings.granted) {
-    await requestPermissionsAsync({ ios: { allowAlert: true } });
-  }
+  if (settings.granted) return true;
+  const after = await requestPermissionsAsync({ ios: { allowAlert: true } });
+  return after.granted;
+}
+
+/** Current permission without prompting. */
+export async function notificationsAllowed(): Promise<boolean> {
+  return (await getPermissionsAsync()).granted;
 }
 
 export async function cancelScheduledReminders() {
@@ -59,9 +65,10 @@ export async function scheduleNextReminder(args: {
     args.intervalMinutes,
     args.afterLogAt,
   );
+  // Cancel first: a reminder scheduled under an older (wider) window must not survive.
+  await cancelAllScheduledNotificationsAsync();
   if (!next) return;
   await setupNotifications();
-  await cancelAllScheduledNotificationsAsync();
   await scheduleNotificationAsync({
     content: getReminderContent(next),
     trigger: { type: SchedulableTriggerInputTypes.DATE, date: next },

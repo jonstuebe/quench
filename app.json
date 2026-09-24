@@ -18,7 +18,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.jonstuebe.quench",
       "infoPlist": {
-        "UIBackgroundModes": ["fetch", "fetch"],
+        "UIBackgroundModes": ["fetch"],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -64,12 +64,12 @@
           "enableBackgroundRemoteNotifications": false
         }
       ],
-      "@react-native-community/datetimepicker",
       "expo-font",
       "expo-image",
       "expo-web-browser",
       "expo-updates",
-      "@bacons/apple-targets"
+      "@bacons/apple-targets",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true,

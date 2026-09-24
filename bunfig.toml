@@ -1,0 +1,4 @@
+[test]
+# Pin a DST-observing timezone so day-boundary tests are deterministic.
+preload = ["./test/setup.ts"]
+root = "./lib"

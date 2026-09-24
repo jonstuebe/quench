@@ -1,38 +1,28 @@
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { calculateWaterGoalFlOz } from "@/lib/health/goal";
 import {
-  exerciseDayMin$,
-  exerciseDaySync$,
   todayExerciseMin$,
   todayExerciseSync$,
   todayWaterFlOz$,
   todayWaterSync$,
-  waterDayFlOz$,
-  waterDaySync$,
   weightLb$,
   weightSync$,
 } from "@/lib/health/store";
 import { useValue } from "@legendapp/state/react";
 
-export type WaterWidgetMode = "today" | "day";
-
 /**
- * Fill fraction and palette for the water Skia shader / web gradient, shared by
- * WaterWidget and full-screen home backdrop.
+ * Fill fraction and palette for the full-screen home water backdrop (Skia shader / web
+ * gradient).
  */
-export function useWaterShaderUniforms(mode: WaterWidgetMode) {
+export function useWaterShaderUniforms() {
   const colorScheme = useColorScheme();
 
-  const water = useValue(mode === "today" ? todayWaterFlOz$ : waterDayFlOz$);
-  const exerciseMin = useValue(mode === "today" ? todayExerciseMin$ : exerciseDayMin$);
+  const water = useValue(todayWaterFlOz$);
+  const exerciseMin = useValue(todayExerciseMin$);
   const weight = useValue(weightLb$);
 
-  const waterLoaded = useValue(() =>
-    mode === "today" ? todayWaterSync$.isLoaded.get() : waterDaySync$.isLoaded.get(),
-  );
-  const exerciseLoaded = useValue(() =>
-    mode === "today" ? todayExerciseSync$.isLoaded.get() : exerciseDaySync$.isLoaded.get(),
-  );
+  const waterLoaded = useValue(() => todayWaterSync$.isLoaded.get());
+  const exerciseLoaded = useValue(() => todayExerciseSync$.isLoaded.get());
   const weightLoaded = useValue(() => weightSync$.isLoaded.get());
   const loading = !waterLoaded || !exerciseLoaded || !weightLoaded;
 

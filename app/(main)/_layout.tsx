@@ -1,42 +1,27 @@
-import { Stack } from "expo-router";
+import { NativeTabs } from "expo-router/unstable-native-tabs";
 
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useStreakEngine } from "@/hooks/use-streak-engine";
 
-export default function MainLayout() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme];
-
+/** Root native tab bar (system liquid glass on iOS 26). Each tab owns a Stack for its own header. */
+export default function MainTabsLayout() {
+  useStreakEngine();
   return (
-    <Stack screenOptions={{ contentStyle: { flex: 1 } }}>
-      <Stack.Screen
-        name="home"
-        options={{
-          title: "",
-          headerShadowVisible: false,
-          headerTransparent: true,
-          headerStyle: { backgroundColor: "transparent" },
-          headerTintColor: colorScheme === "light" ? "#ffffff" : colors.text,
-        }}
-      />
-      <Stack.Screen
-        name="insights"
-        options={{
-          title: "Insights",
-          headerLargeTitle: true,
-          headerBackButtonDisplayMode: "minimal",
-          headerShadowVisible: false,
-        }}
-      />
-      <Stack.Screen
-        name="settings"
-        options={{
-          title: "Settings",
-          headerBackButtonDisplayMode: "minimal",
-          headerShadowVisible: false,
-        }}
-      />
-      <Stack.Screen name="day/[date]" options={{ headerShown: false }} />
-    </Stack>
+    <NativeTabs minimizeBehavior="never">
+      <NativeTabs.Trigger name="home">
+        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: "drop", selected: "drop.fill" }} md="water_drop" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="graveyard">
+        <NativeTabs.Trigger.Label>Graveyard</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: "leaf", selected: "leaf.fill" }} md="spa" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="settings">
+        <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: "gearshape", selected: "gearshape.fill" }}
+          md="settings"
+        />
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }
