@@ -33,10 +33,9 @@ export type MoodLineInput = {
 export function moodLine({ mood, name, unit, behindFlOz, remainingFlOz }: MoodLineInput): string {
   const amount = (flOz: number) => formatAmount(flOz, unit);
   const pet = name ?? "Your axolotl";
-  const behindShown = roundedDisplay(behindFlOz, unit) > 0;
-  if (!behindShown && (mood === "content" || mood === "thirsty" || mood === "parched")) {
-    return `${pet} is right on pace`;
-  }
+  const behind = roundedDisplay(behindFlOz, unit) > 0 ? amount(behindFlOz) : null;
+  const remaining = roundedDisplay(remainingFlOz, unit) > 0 ? amount(remainingFlOz) : null;
+  if (!behind && mood === "content") return `${pet} is right on pace`;
   switch (mood) {
     case "egg":
       return "Hit today's goal to hatch your egg";
@@ -45,12 +44,14 @@ export function moodLine({ mood, name, unit, behindFlOz, remainingFlOz }: MoodLi
     case "happy":
       return `${pet} is happy and on pace`;
     case "content":
-      return `${pet} is doing fine — ${amount(behindFlOz)} to catch up`;
+      return `${pet} is doing fine — ${behind} to catch up`;
     case "thirsty":
-      return `${pet} is getting thirsty — you're ${amount(behindFlOz)} behind`;
+      return `${pet} is getting thirsty — you're ${behind ?? "just a sip"} behind`;
     case "parched":
-      return `${pet} is parched — you're ${amount(behindFlOz)} behind`;
+      return `${pet} is parched — you're ${behind ?? "just a sip"} behind`;
     case "last-chance":
-      return `Last chance! Drink ${amount(remainingFlOz)} before midnight to keep ${pet}`;
+      return remaining
+        ? `Last chance! Drink ${remaining} before midnight to keep ${pet}`
+        : `Last chance! Just a sip more before midnight to keep ${pet}`;
   }
 }

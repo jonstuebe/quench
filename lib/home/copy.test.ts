@@ -78,8 +78,23 @@ describe("moodLine", () => {
       moodLine({ ...base, unit: "pt_us", mood: "last-chance", behindFlOz: 0, remainingFlOz: 20 }),
     ).toBe("Last chance! Drink 1.25 pints before midnight to keep Mochi");
   });
-  test("a shortfall that rounds to zero reads as on pace", () => {
-    expect(moodLine({ ...base, mood: "thirsty", behindFlOz: 0.3 })).toBe("Mochi is right on pace");
+  test("content with a shortfall that rounds to zero reads as on pace", () => {
+    expect(moodLine({ ...base, mood: "content", behindFlOz: 0.3 })).toBe("Mochi is right on pace");
+  });
+  test("thirsty with a shortfall that rounds to zero is just a sip behind", () => {
+    expect(moodLine({ ...base, mood: "thirsty", behindFlOz: 0.3 })).toBe(
+      "Mochi is getting thirsty — you're just a sip behind",
+    );
+  });
+  test("parched with a shortfall that rounds to zero is just a sip behind", () => {
+    expect(moodLine({ ...base, mood: "parched", behindFlOz: 0.2 })).toBe(
+      "Mochi is parched — you're just a sip behind",
+    );
+  });
+  test("last-chance with a remainder that rounds to zero asks for one more sip", () => {
+    expect(moodLine({ ...base, mood: "last-chance", behindFlOz: 0.4, remainingFlOz: 0.4 })).toBe(
+      "Last chance! Just a sip more before midnight to keep Mochi",
+    );
   });
   test("an unnamed pet is 'Your axolotl'", () => {
     expect(moodLine({ ...base, name: null, mood: "happy", behindFlOz: 0 })).toBe(

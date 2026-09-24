@@ -9,11 +9,14 @@ const numberFmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 
 /** A display-unit value rounded to the unit's step. */
 export function roundDisplayValue(value: number, unit: VolumeDisplayUnit): number {
+  // Clamp negatives / NaN so we never print "-0" or "NaN".
+  if (!(value > 0)) return 0;
   return Math.round(value / STEP[unit]) * STEP[unit];
 }
 
 /** fl oz → rounded display number in `unit`. */
 export function roundedDisplay(flOz: number, unit: VolumeDisplayUnit): number {
+  if (!(flOz > 0)) return 0;
   return roundDisplayValue(flOzToDisplay(flOz, unit), unit);
 }
 

@@ -12,7 +12,7 @@ import { evaluateStreakNow } from "@/lib/streak/engine";
  * Save a drink to HealthKit, refresh today's totals, re-judge the streak and push the next
  * reminder. Returns whether the save succeeded (errors are surfaced as alerts).
  */
-export async function logWaterFlOz(flOz: number): Promise<boolean> {
+export async function logWaterFlOz(flOz: number, onSaved?: () => void): Promise<boolean> {
   try {
     await saveWaterFlOz(flOz, new Date());
   } catch (e) {
@@ -26,6 +26,7 @@ export async function logWaterFlOz(flOz: number): Promise<boolean> {
     }
     return false;
   }
+  onSaved?.();
   // The drink is saved; everything below is best-effort and must not report a failure
   // (a false "Could not save" invites a re-tap and a double log).
   try {
@@ -58,11 +59,16 @@ export function useLogWater() {
     if (inFlight.current) return false;
     inFlight.current = true;
     setSaving(true);
-    try {
-      return await logWaterFlOz(flOz);
-    } finally {
+    // Release the guard as soon as the save itself settles, not after the best-effort
+    // refresh/reminder work, so a quick follow-up tap isn't dropped.
+    const release = () => {
       inFlight.current = false;
       setSaving(false);
+    };
+    try {
+      return await logWaterFlOz(flOz, release);
+    } finally {
+      release();
     }
   }, []);
   return { log, saving };

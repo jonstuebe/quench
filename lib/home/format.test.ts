@@ -27,4 +27,11 @@ describe("formatAmount", () => {
     expect(formatDisplayAmount(1, "pt_us")).toBe("1 pint");
     expect(formatDisplayAmount(0.5, "cup")).toBe("0.5 cups");
   });
+  test("negative and NaN inputs clamp to zero", () => {
+    expect(formatAmount(-0.2, "fl-oz")).toBe("0 fl oz");
+    expect(formatAmount(-5, "ml")).toBe("0 ml");
+    expect(formatAmount(Number.NaN, "cup")).toBe("0 cups");
+    expect(formatAmountValue(Number.NaN, "fl-oz")).toBe("0");
+    expect(formatDisplayAmount(-1, "pt_us")).toBe("0 pints");
+  });
 });
