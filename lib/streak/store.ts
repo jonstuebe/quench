@@ -12,7 +12,7 @@ import { todayExerciseMin$, todayWaterFlOz$, weightLb$ } from "@/lib/health/stor
 import { prefs$ } from "@/lib/prefs";
 
 import type { DayKey } from "./day";
-import { initialStreakState, type StreakState } from "./evaluate";
+import { initialStreakState, normalizeStreakState, type StreakState } from "./evaluate";
 import { derivePetView } from "./view";
 
 const persistPlugin = observablePersistMMKV({ id: "quench-mmkv" });
@@ -20,6 +20,8 @@ const persistPlugin = observablePersistMMKV({ id: "quench-mmkv" });
 /** Pets, graveyard, longest streak and judging progress. Written only by the engine. */
 export const streakState$ = observable<StreakState>({ ...initialStreakState });
 syncObservable(streakState$, { persist: { name: "quench-streak", plugin: persistPlugin } });
+// MMKV loads synchronously: normalize whatever was persisted (older/partial shapes).
+streakState$.set(normalizeStreakState(streakState$.peek()));
 
 /**
  * Goal in effect per day, recorded whenever the engine runs on that day (last write of the
