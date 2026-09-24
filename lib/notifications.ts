@@ -59,9 +59,10 @@ export async function scheduleNextReminder(args: {
     args.intervalMinutes,
     args.afterLogAt,
   );
+  // Cancel first: a reminder scheduled under an older (wider) window must not survive.
+  await cancelAllScheduledNotificationsAsync();
   if (!next) return;
   await setupNotifications();
-  await cancelAllScheduledNotificationsAsync();
   await scheduleNotificationAsync({
     content: getReminderContent(next),
     trigger: { type: SchedulableTriggerInputTypes.DATE, date: next },
