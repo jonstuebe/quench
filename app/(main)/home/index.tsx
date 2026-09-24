@@ -2,11 +2,12 @@ import { useValue } from "@legendapp/state/react";
 import { GlassContainer, GlassView } from "expo-glass-effect";
 import { router, Stack, useIsFocused } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppState, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AxolotlPet } from "@/components/axolotl/axolotl-pet";
+import { WeekStreak } from "@/components/home/week-streak";
 import { GoalConfettiOverlay } from "@/components/goal-confetti-overlay";
 import { WaterHomeShaderBackdrop } from "@/components/water-home-shader-backdrop";
 import { Fonts, glassLabelOnBrightLight } from "@/constants/theme";
@@ -14,11 +15,14 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useWaterShaderUniforms } from "@/hooks/use-water-shader-uniforms";
 import { useWaterUndoLastDrink } from "@/hooks/use-water-undo-last-drink";
 import { formatAmountValue, formatDisplayAmount } from "@/lib/home/format";
-import { moodLine, quickLogPresets, streakChipLabel } from "@/lib/home/copy";
+import { moodLine, quickLogPresets } from "@/lib/home/copy";
+import { weekStrip } from "@/lib/home/week";
 import { petAccessibilityLabel } from "@/lib/axolotl/visuals";
 import { DEV_PREVIEW_MOODS, DEV_START_MOOD } from "@/lib/dev/pet-preview";
 import { useLogWater } from "@/lib/log-water";
+import { now$ } from "@/lib/clock";
 import { prefs$ } from "@/lib/prefs";
+import { addDaysToKey, toDayKey } from "@/lib/streak/day";
 import { currentPet$ } from "@/lib/streak/store";
 import type { PetMood } from "@/lib/streak/view";
 import { displayToFlOz, formatVolumeLabel } from "@/lib/volume";
@@ -26,9 +30,13 @@ import { displayToFlOz, formatVolumeLabel } from "@/lib/volume";
 /** Home is focused and the app is in the foreground (drives pausing the pet's animation). */
 function useScreenActive() {
   const focused = useIsFocused();
-  const [appActive, setAppActive] = useState(AppState.currentState === "active");
+  const [appActive, setAppActive] = useState(
+    AppState.currentState === "active",
+  );
   useEffect(() => {
-    const sub = AppState.addEventListener("change", (s) => setAppActive(s === "active"));
+    const sub = AppState.addEventListener("change", (s) =>
+      setAppActive(s === "active"),
+    );
     return () => sub.remove();
   }, []);
   return focused && appActive;
@@ -38,7 +46,8 @@ export default function HomeScreen() {
   const scheme = useColorScheme();
   const insets = useSafeAreaInsets();
   const ink = scheme === "light" ? glassLabelOnBrightLight : "#FFFFFF";
-  const inkMuted = scheme === "light" ? "rgba(13,40,64,0.68)" : "rgba(255,255,255,0.72)";
+  const inkMuted =
+    scheme === "light" ? "rgba(13,40,64,0.68)" : "rgba(255,255,255,0.72)";
 
   const { water, loading, goalFlOz } = useWaterShaderUniforms();
   const active = useScreenActive();
@@ -46,11 +55,15 @@ export default function HomeScreen() {
   const pet = useValue(currentPet$);
 
   // DEV only: long-press the pet to cycle through moods (see lib/dev/pet-preview.ts).
-  const [devMood, setDevMood] = useState<PetMood | null>(__DEV__ ? DEV_START_MOOD : null);
+  const [devMood, setDevMood] = useState<PetMood | null>(
+    __DEV__ ? DEV_START_MOOD : null,
+  );
   const preview = __DEV__ ? devMood : null;
   const cycleDevMood = () => {
     const i = devMood ? DEV_PREVIEW_MOODS.indexOf(devMood) : -1;
-    setDevMood(i + 1 < DEV_PREVIEW_MOODS.length ? DEV_PREVIEW_MOODS[i + 1] : null);
+    setDevMood(
+      i + 1 < DEV_PREVIEW_MOODS.length ? DEV_PREVIEW_MOODS[i + 1] : null,
+    );
   };
 
   // Until today's water has loaded, the pace mood is meaningless (it would read as parched on a
@@ -58,7 +71,11 @@ export default function HomeScreen() {
   const holdNeutral = loading && pet.kind === "alive" && !preview;
   const mood: PetMood = preview ?? (holdNeutral ? "content" : pet.mood);
   const petName =
-    pet.kind === "alive" ? pet.pet.name : preview && preview !== "egg" ? "Mochi" : null;
+    pet.kind === "alive"
+      ? pet.pet.name
+      : preview && preview !== "egg"
+        ? "Mochi"
+        : null;
   const streak = preview ? (preview === "egg" ? 0 : 12) : pet.currentStreak;
 
   // Goal crossing → confetti; any increase → the pet drinks.
@@ -84,7 +101,8 @@ export default function HomeScreen() {
   const unitLabel = formatVolumeLabel(unit);
   const fmt = (flOz: number) => formatAmountValue(flOz, unit);
   const fraction = goalFlOz > 0 ? Math.min(1, water / goalFlOz) : 0;
-  const behindFlOz = pet.kind === "alive" ? Math.max(0, pet.pace.expectedFlOz - water) : 0;
+  const behindFlOz =
+    pet.kind === "alive" ? Math.max(0, pet.pace.expectedFlOz - water) : 0;
   const line = holdNeutral
     ? "Checking today's water…"
     : moodLine({
@@ -96,7 +114,20 @@ export default function HomeScreen() {
       });
   const { log, saving } = useLogWater();
 
-  const flame = streak > 0;
+  const nowMs = useValue(now$);
+  const week = useMemo(() => {
+    const now = new Date(nowMs);
+    const today = toDayKey(now);
+    // DEV preview: a 12-day pet counted through today, or the egg; otherwise the real pet's run.
+    const run = preview
+      ? preview === "egg"
+        ? null
+        : { hatchedOn: addDaysToKey(today, -11), lastCountedDay: today }
+      : pet.kind === "alive"
+        ? pet.pet
+        : null;
+    return weekStrip({ now, pet: run, todayFraction: fraction });
+  }, [nowMs, preview, pet, fraction]);
 
   return (
     <>
@@ -111,55 +142,33 @@ export default function HomeScreen() {
       </Stack.Toolbar>
       <View style={{ flex: 1 }}>
         <WaterHomeShaderBackdrop />
-        <View style={{ flex: 1, paddingTop: insets.top + 52, paddingHorizontal: 16, gap: 14 }}>
-          {/* Streak + name: two glass capsules that melt together. */}
-          <GlassContainer
-            spacing={10}
-            style={{ flexDirection: "row", alignSelf: "center", gap: 8 }}
-          >
-            <GlassView
-              glassEffectStyle="regular"
-              style={chip}
-              accessible
-              accessibilityLabel={
-                flame
-                  ? `Streak: ${streak} ${streak === 1 ? "day" : "days"}`
-                  : "No streak yet. Start your streak"
-              }
-            >
-              <SymbolView
-                name={flame ? "flame.fill" : "drop.fill"}
-                size={17}
-                tintColor={flame ? "#FF8A3D" : "#4FB8E8"}
-              />
-              <Text
-                style={[chipText, { color: ink }]}
-                maxFontSizeMultiplier={1.4}
-                numberOfLines={1}
-              >
-                {streakChipLabel(streak)}
-              </Text>
-            </GlassView>
-            {petName ? (
-              <GlassView
-                glassEffectStyle="regular"
-                style={chip}
-                accessible
-                accessibilityLabel={`Pet name: ${petName}`}
-              >
-                <Text
-                  style={[chipText, { color: ink }]}
-                  maxFontSizeMultiplier={1.4}
-                  numberOfLines={1}
-                >
-                  {petName}
-                </Text>
-              </GlassView>
-            ) : null}
-          </GlassContainer>
+        <View
+          style={{
+            flex: 1,
+            paddingTop: insets.top + 52,
+            paddingHorizontal: 16,
+            gap: 14,
+          }}
+        >
+          <WeekStreak
+            streak={streak}
+            week={week}
+            ink={ink}
+            inkMuted={inkMuted}
+            track={
+              scheme === "light"
+                ? "rgba(13,40,64,0.16)"
+                : "rgba(255,255,255,0.18)"
+            }
+          />
 
           <View
-            style={{ flex: 1, minHeight: 120, alignItems: "center", justifyContent: "center" }}
+            style={{
+              flex: 1,
+              minHeight: 120,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
             onLayout={(e) => {
               setHeroH(e.nativeEvent.layout.height);
               setHeroW(e.nativeEvent.layout.width);
@@ -188,7 +197,12 @@ export default function HomeScreen() {
           {/* Today's progress + mood line */}
           <GlassView
             glassEffectStyle="regular"
-            style={{ borderRadius: 26, paddingHorizontal: 18, paddingVertical: 14, gap: 8 }}
+            style={{
+              borderRadius: 26,
+              paddingHorizontal: 18,
+              paddingVertical: 14,
+              gap: 8,
+            }}
             accessible
             accessibilityLabel={`${fmt(water)} of ${fmt(goalFlOz)} ${unitLabel} today. ${line}`}
           >
@@ -219,7 +233,9 @@ export default function HomeScreen() {
                 height: 6,
                 borderRadius: 3,
                 backgroundColor:
-                  scheme === "light" ? "rgba(13,40,64,0.12)" : "rgba(255,255,255,0.16)",
+                  scheme === "light"
+                    ? "rgba(13,40,64,0.12)"
+                    : "rgba(255,255,255,0.16)",
                 overflow: "hidden",
               }}
             >
@@ -229,7 +245,11 @@ export default function HomeScreen() {
                   height: "100%",
                   borderRadius: 3,
                   backgroundColor:
-                    fraction >= 1 ? "#FF7FA5" : scheme === "light" ? "#1E7EC8" : "#6FD3F0",
+                    fraction >= 1
+                      ? "#FF7FA5"
+                      : scheme === "light"
+                        ? "#1E7EC8"
+                        : "#6FD3F0",
                 }}
               />
             </View>
@@ -262,7 +282,11 @@ export default function HomeScreen() {
                   accessibilityLabel={`Log ${text}`}
                   accessibilityState={{ disabled: saving }}
                 >
-                  <GlassView glassEffectStyle="regular" isInteractive style={pill}>
+                  <GlassView
+                    glassEffectStyle="regular"
+                    isInteractive
+                    style={pill}
+                  >
                     <Text
                       style={[pillText, { color: ink }]}
                       numberOfLines={1}
@@ -287,7 +311,12 @@ export default function HomeScreen() {
                 tintColor="#0A84FF"
                 style={[pill, { width: PILL_H, paddingHorizontal: 0 }]}
               >
-                <SymbolView name="plus" size={20} weight="semibold" tintColor="#FFFFFF" />
+                <SymbolView
+                  name="plus"
+                  size={20}
+                  weight="semibold"
+                  tintColor="#FFFFFF"
+                />
               </GlassView>
             </Pressable>
           </GlassContainer>
@@ -315,14 +344,8 @@ const pill = {
   justifyContent: "center" as const,
   paddingHorizontal: 10,
 };
-const pillText = { fontFamily: Fonts.rounded, fontSize: 17, fontWeight: "600" as const };
-
-const chip = {
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  gap: 6,
-  paddingHorizontal: 14,
-  paddingVertical: 9,
-  borderRadius: 999,
+const pillText = {
+  fontFamily: Fonts.rounded,
+  fontSize: 17,
+  fontWeight: "600" as const,
 };
-const chipText = { fontFamily: Fonts.rounded, fontSize: 16, fontWeight: "700" as const };

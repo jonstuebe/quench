@@ -3,10 +3,6 @@ import type { PetMood } from "@/lib/streak/view";
 import type { VolumeDisplayUnit } from "@/lib/types";
 import { formatAmount, roundedDisplay } from "./format";
 
-export function streakChipLabel(currentStreak: number): string {
-  return currentStreak > 0 ? `Day ${currentStreak}` : "Start your streak";
-}
-
 /** One-tap amounts on the quick-log bar, in the user's display unit. */
 const PRESETS: Record<VolumeDisplayUnit, number[]> = {
   "fl-oz": [8, 12, 16],
@@ -30,11 +26,19 @@ export type MoodLineInput = {
 };
 
 /** One short sentence under the progress readout. */
-export function moodLine({ mood, name, unit, behindFlOz, remainingFlOz }: MoodLineInput): string {
+export function moodLine({
+  mood,
+  name,
+  unit,
+  behindFlOz,
+  remainingFlOz,
+}: MoodLineInput): string {
   const amount = (flOz: number) => formatAmount(flOz, unit);
   const pet = name ?? "Your axolotl";
-  const behind = roundedDisplay(behindFlOz, unit) > 0 ? amount(behindFlOz) : null;
-  const remaining = roundedDisplay(remainingFlOz, unit) > 0 ? amount(remainingFlOz) : null;
+  const behind =
+    roundedDisplay(behindFlOz, unit) > 0 ? amount(behindFlOz) : null;
+  const remaining =
+    roundedDisplay(remainingFlOz, unit) > 0 ? amount(remainingFlOz) : null;
   if (!behind && mood === "content") return `${pet} is right on pace`;
   switch (mood) {
     case "egg":

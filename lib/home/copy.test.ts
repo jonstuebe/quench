@@ -3,17 +3,7 @@ import { describe, expect, test } from "bun:test";
 import type { VolumeDisplayUnit } from "@/lib/types";
 import { displayToFlOz } from "@/lib/volume";
 
-import { moodLine, quickLogPresets, streakChipLabel } from "./copy";
-
-describe("streakChipLabel", () => {
-  test("invites a first streak at zero", () => {
-    expect(streakChipLabel(0)).toBe("Start your streak");
-  });
-  test("counts days", () => {
-    expect(streakChipLabel(1)).toBe("Day 1");
-    expect(streakChipLabel(14)).toBe("Day 14");
-  });
-});
+import { moodLine, quickLogPresets } from "./copy";
 
 describe("quickLogPresets", () => {
   const units: VolumeDisplayUnit[] = ["fl-oz", "ml", "cup", "pt_us"];
@@ -41,12 +31,14 @@ describe("moodLine", () => {
     );
   });
   test("shortfall is shown in the display unit", () => {
-    expect(moodLine({ ...base, unit: "ml", mood: "parched", behindFlOz: 10 })).toBe(
-      "Mochi is parched — you're 296 ml behind",
-    );
+    expect(
+      moodLine({ ...base, unit: "ml", mood: "parched", behindFlOz: 10 }),
+    ).toBe("Mochi is parched — you're 296 ml behind");
   });
   test("happy", () => {
-    expect(moodLine({ ...base, mood: "happy", behindFlOz: 0 })).toBe("Mochi is happy and on pace");
+    expect(moodLine({ ...base, mood: "happy", behindFlOz: 0 })).toBe(
+      "Mochi is happy and on pace",
+    );
   });
   test("content", () => {
     expect(moodLine({ ...base, mood: "content", behindFlOz: 3 })).toBe(
@@ -59,9 +51,14 @@ describe("moodLine", () => {
     );
   });
   test("celebrating", () => {
-    expect(moodLine({ ...base, mood: "celebrating", behindFlOz: 0, remainingFlOz: 0 })).toBe(
-      "Goal met! Mochi is thrilled",
-    );
+    expect(
+      moodLine({
+        ...base,
+        mood: "celebrating",
+        behindFlOz: 0,
+        remainingFlOz: 0,
+      }),
+    ).toBe("Goal met! Mochi is thrilled");
   });
   test("rounds fl oz to whole numbers", () => {
     expect(moodLine({ ...base, mood: "content", behindFlOz: 3.6 })).toBe(
@@ -69,17 +66,25 @@ describe("moodLine", () => {
     );
   });
   test("cups round to the nearest quarter", () => {
-    expect(moodLine({ ...base, unit: "cup", mood: "thirsty", behindFlOz: 11 })).toBe(
-      "Mochi is getting thirsty — you're 1.5 cups behind",
-    );
+    expect(
+      moodLine({ ...base, unit: "cup", mood: "thirsty", behindFlOz: 11 }),
+    ).toBe("Mochi is getting thirsty — you're 1.5 cups behind");
   });
   test("pints round to the nearest quarter", () => {
     expect(
-      moodLine({ ...base, unit: "pt_us", mood: "last-chance", behindFlOz: 0, remainingFlOz: 20 }),
+      moodLine({
+        ...base,
+        unit: "pt_us",
+        mood: "last-chance",
+        behindFlOz: 0,
+        remainingFlOz: 20,
+      }),
     ).toBe("Last chance! Drink 1.25 pints before midnight to keep Mochi");
   });
   test("content with a shortfall that rounds to zero reads as on pace", () => {
-    expect(moodLine({ ...base, mood: "content", behindFlOz: 0.3 })).toBe("Mochi is right on pace");
+    expect(moodLine({ ...base, mood: "content", behindFlOz: 0.3 })).toBe(
+      "Mochi is right on pace",
+    );
   });
   test("thirsty with a shortfall that rounds to zero is just a sip behind", () => {
     expect(moodLine({ ...base, mood: "thirsty", behindFlOz: 0.3 })).toBe(
@@ -92,13 +97,18 @@ describe("moodLine", () => {
     );
   });
   test("last-chance with a remainder that rounds to zero asks for one more sip", () => {
-    expect(moodLine({ ...base, mood: "last-chance", behindFlOz: 0.4, remainingFlOz: 0.4 })).toBe(
-      "Last chance! Just a sip more before midnight to keep Mochi",
-    );
+    expect(
+      moodLine({
+        ...base,
+        mood: "last-chance",
+        behindFlOz: 0.4,
+        remainingFlOz: 0.4,
+      }),
+    ).toBe("Last chance! Just a sip more before midnight to keep Mochi");
   });
   test("an unnamed pet is 'Your axolotl'", () => {
-    expect(moodLine({ ...base, name: null, mood: "happy", behindFlOz: 0 })).toBe(
-      "Your axolotl is happy and on pace",
-    );
+    expect(
+      moodLine({ ...base, name: null, mood: "happy", behindFlOz: 0 }),
+    ).toBe("Your axolotl is happy and on pace");
   });
 });
